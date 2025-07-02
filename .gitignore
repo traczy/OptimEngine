@@ -1,8 +1,8 @@
 # build files
-./build/
+build/*
 
 # all object files
 **/*.o
 
 # VSCode files
-vscode/
+.vscode/*
