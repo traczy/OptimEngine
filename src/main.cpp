@@ -1,7 +1,12 @@
+#include "windowing/Mainwindow.h"
+
 #include <iostream>
 
 int main()
 {
-    std::cout << "hello world" << std::endl;
+    MainWindow* window = new MainWindow();
+    if (window->isAlive())
+        window->exec();
+
     return 0;
 }
