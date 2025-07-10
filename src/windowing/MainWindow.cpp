@@ -1,10 +1,15 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-
-#include "windowing/Mainwindow.h"
 #include <cmath>
 #include <chrono>
+
+#include "windowing/Mainwindow.h"
+#include "RenderObjects/Object2D.h"
+
+void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+    std::cout << "GL DEBUG: " << message << std::endl;
+}
 
 MainWindow::MainWindow()
 {
@@ -20,6 +25,7 @@ MainWindow::MainWindow()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     // Create window
     this->window = glfwCreateWindow(800, 600, "Optim", nullptr, nullptr);
@@ -40,6 +46,10 @@ MainWindow::MainWindow()
         this->alive = false;
         return;
     }
+
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(debugCallback, nullptr);
 
     // Set viewport and callback
     glViewport(0, 0, 800, 600);
@@ -66,6 +76,24 @@ void MainWindow::processInput()
 
 void MainWindow::exec()
 {
+    // Define interleaved vertices with positions and colors (using double)
+    float* vertices = new float[24]{
+        // Positions         // Colors
+        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0, // Bottom-left (Red)
+         0.5, -0.5, 0.0,    0.0, 1.0, 0.0, // Bottom-right (Green)
+         0.5,  0.5, 0.0,    0.0, 0.0, 1.0, // Top-right (Blue)
+        -0.5,  0.5, 0.0,    1.0, 1.0, 0.0  // Top-left (Yellow)
+    };
+
+    unsigned int* indices = new unsigned int[6]{
+        0, 1, 2, // First triangle
+        2, 3, 0  // Second triangle
+    };
+
+    Object2D* obj = new Object2D(vertices, indices, 24, 6);
+    obj->compileShader();
+    obj->buildGeometry();
+
     auto begin = std::chrono::high_resolution_clock::now();
     size_t iters = 0;
     // Render loop
@@ -75,15 +103,19 @@ void MainWindow::exec()
         processInput();
 
         // Rendering
-        float time = (float)glfwGetTime();
-        float greenValue = (sin(time) / 2.0f) + 0.5f;
-        
-        glClearColor(0.2f, greenValue, 0.3f, 1.0f);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+        if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after clear" << std::endl;
+
+        obj->render();
 
         // Swap buffers and poll events
         glfwSwapBuffers(this->window);
         glfwPollEvents();
+        const char* glfwError;
+        if (glfwGetError(&glfwError) != GLFW_NO_ERROR) {
+            std::cout << "GLFW Error: " << glfwError << std::endl;
+        }
 
         iters++;
     }

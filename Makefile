@@ -9,7 +9,7 @@ OBJECTS = $(patsubst $(SRC)%.cpp,$(BUILD)%.o,$(SOURCES)) $(BUILD)glad.o
 INCLUDE_DIRS = -I../../glfw-3.4/include/ -I../../glad/include/ -I./include/
 LINK = -lkernel32 -lUser32 -lGdi32 -L"../../glfw-3.4/lib-mingw-w64/" -lglfw3dll -L"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/" -lOpenGL32 -mconsole
 
-CXXFLAGS_DEBUG = g++ -Wall -g --std=c++17
+CXXFLAGS_DEBUG = g++ -Wall -O0 -g --std=c++17
 CXXFLAGS_RELEASE = g++ -Wall --std=c++17
 CXX_FULLBUILD_DEBUG = $(CXXFLAGS_DEBUG) $(INCLUDE_DIRS)
 CXX_OBJECT_BUILD_DEBUG = $(CXXFLAGS_DEBUG) $(INCLUDE_DIRS)
