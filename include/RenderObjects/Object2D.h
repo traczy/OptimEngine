@@ -17,7 +17,7 @@ public:
     void render();
 
     bool compileShader();
-    void buildGeometry();
+    bool buildGeometry();
 
 private:
     float* vertexAndColorData;

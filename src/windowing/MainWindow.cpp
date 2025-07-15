@@ -47,9 +47,15 @@ MainWindow::MainWindow()
         return;
     }
 
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageCallback(debugCallback, nullptr);
+    if (glDebugMessageCallback) {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(debugCallback, nullptr);
+    }
+    else
+    {
+        std::cout << "GLDebug output not supported" << std::endl;
+    }
 
     // Set viewport and callback
     glViewport(0, 0, 800, 600);
@@ -91,8 +97,18 @@ void MainWindow::exec()
     };
 
     Object2D* obj = new Object2D(vertices, indices, 24, 6);
-    obj->compileShader();
-    obj->buildGeometry();
+    if (!obj->compileShader())
+    {
+        std::cout << "error compiling shaders" << std::endl;
+        delete obj;
+        return;
+    }
+    if (!obj->buildGeometry())
+    {
+        std::cout << "error building geometry" << std::endl;
+        delete obj;
+        return;
+    }
 
     auto begin = std::chrono::high_resolution_clock::now();
     size_t iters = 0;
@@ -111,7 +127,10 @@ void MainWindow::exec()
 
         // Swap buffers and poll events
         glfwSwapBuffers(this->window);
-        glfwPollEvents();
+        if (!glfwWindowShouldClose(this->window))
+            glfwPollEvents();
+        else
+            std::cout << "should close" << std::endl;
         const char* glfwError;
         if (glfwGetError(&glfwError) != GLFW_NO_ERROR) {
             std::cout << "GLFW Error: " << glfwError << std::endl;
@@ -119,6 +138,8 @@ void MainWindow::exec()
 
         iters++;
     }
+
+    delete obj;
 
     auto end = std::chrono::high_resolution_clock::now();
     double fps = (double)iters / (double)std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
