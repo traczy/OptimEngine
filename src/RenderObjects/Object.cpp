@@ -1,12 +1,16 @@
-#include "RenderObjects/Object2D.h"
+#include "RenderObjects/Object.h"
 #include "shaders/VertexShader.h"
 #include "shaders/FragmentShader.h"
+#include "windowing/Mainwindow.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-Object2D::Object2D()
+Object::Object()
 {
     this->vertexAndColorData = nullptr;
     this->elementBufferData = nullptr;
@@ -20,7 +24,7 @@ Object2D::Object2D()
     this->elementSize = 0;
 }
 
-Object2D::Object2D(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize)
+Object::Object(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize)
 {
     this->vertexAndColorData = vcData;
     this->elementBufferData = elementData;
@@ -28,7 +32,7 @@ Object2D::Object2D(float* vcData, unsigned int* elementData, size_t vcSize, size
     this->elementSize = eSize;
 }
 
-Object2D::~Object2D()
+Object::~Object()
 {
     if (this->vertexAndColorData)
         delete this->vertexAndColorData;
@@ -45,7 +49,7 @@ Object2D::~Object2D()
         glDeleteProgram(this->shaderProgramHandle);
 }
 
-bool Object2D::compileShader()
+bool Object::compileShader()
 {
     if (!vertexShader || !fragmentShader) {
         std::cout << "Shader source is null" << std::endl;
@@ -93,7 +97,7 @@ bool Object2D::compileShader()
     return true;
 }
 
-bool Object2D::buildGeometry()
+bool Object::buildGeometry()
 {
     if (this->vertexAndColorData && this->dataSize > 0 && this->elementBufferData && this->elementSize > 0)
     {
@@ -154,7 +158,7 @@ bool Object2D::buildGeometry()
         return false;
 }
 
-void Object2D::render()
+void Object::render()
 {
     if (glfwGetCurrentContext() == nullptr) {
         std::cout << "No valid OpenGL context" << std::endl;
@@ -165,9 +169,23 @@ void Object2D::render()
     {
         glUseProgram(this->shaderProgramHandle);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after use program" << std::endl;
+
+        glm::mat4 model = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
+
+        // TODO: Set to Universal Buffer Object
+        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)MainWindow::WIDTH / MainWindow::HEIGHT, 0.1f, 100.0f);
+
+        // Pass matrices to shader
+        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
         glBindVertexArray(this->attributeHandle);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after bind VAO" << std::endl;
+
         glDrawElements(GL_TRIANGLES, this->elementSize, GL_UNSIGNED_INT, 0);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after draw" << std::endl;
+
     }
 }

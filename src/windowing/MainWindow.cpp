@@ -5,7 +5,10 @@
 #include <chrono>
 
 #include "windowing/Mainwindow.h"
-#include "RenderObjects/Object2D.h"
+#include "RenderObjects/Object.h"
+
+const int MainWindow::WIDTH = 800;
+const int MainWindow::HEIGHT = 600;
 
 void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     std::cout << "GL DEBUG: " << message << std::endl;
@@ -28,7 +31,7 @@ MainWindow::MainWindow()
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
     // Create window
-    this->window = glfwCreateWindow(800, 600, "Optim", nullptr, nullptr);
+    this->window = glfwCreateWindow(WIDTH, HEIGHT, "Optim", nullptr, nullptr);
     if (!this->window) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -83,20 +86,29 @@ void MainWindow::processInput()
 void MainWindow::exec()
 {
     // Define interleaved vertices with positions and colors (using double)
-    float* vertices = new float[24]{
-        // Positions         // Colors
-        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0, // Bottom-left (Red)
-         0.5, -0.5, 0.0,    0.0, 1.0, 0.0, // Bottom-right (Green)
-         0.5,  0.5, 0.0,    0.0, 0.0, 1.0, // Top-right (Blue)
-        -0.5,  0.5, 0.0,    1.0, 1.0, 0.0  // Top-left (Yellow)
+    float* vertices = new float[48]{
+        // Front face
+        -0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
+        // Back face
+        -0.5f, -0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f, 0.5f, 1.0f, 1.0f
     };
 
-    unsigned int* indices = new unsigned int[6]{
-        0, 1, 2, // First triangle
-        2, 3, 0  // Second triangle
+    unsigned int* indices = new unsigned int[36]{
+        0, 1, 2, 2, 3, 0, // Front
+        1, 5, 6, 6, 2, 1, // Right
+        5, 4, 7, 7, 6, 5, // Back
+        4, 0, 3, 3, 7, 4, // Left
+        3, 2, 6, 6, 7, 3, // Top
+        4, 5, 1, 1, 0, 4  // Bottom
     };
 
-    Object2D* obj = new Object2D(vertices, indices, 24, 6);
+    Object* obj = new Object(vertices, indices, 48, 36);
     if (!obj->compileShader())
     {
         std::cout << "error compiling shaders" << std::endl;
@@ -120,7 +132,7 @@ void MainWindow::exec()
 
         // Rendering
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after clear" << std::endl;
 
         obj->render();

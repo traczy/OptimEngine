@@ -1,15 +1,15 @@
-#ifndef OBJECT2D_H
-#define OBJECT2D_H
+#ifndef OBJECT_H
+#define OBJECT_H
 
 #include <cstddef>
 
-class Object2D
+class Object
 {
 public:
-    Object2D();
-    Object2D(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize);
+    Object();
+    Object(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize);
 
-    ~Object2D();
+    ~Object();
 
     // TODO: Implement
     void setVertexData(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize);
@@ -32,4 +32,4 @@ private:
     unsigned int shaderProgramHandle;
 };
 
-#endif // OBJECT2D_H
+#endif // OBJECT_H
