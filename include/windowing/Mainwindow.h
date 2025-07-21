@@ -6,6 +6,9 @@ class GLFWwindow;
 class MainWindow 
 {
 public:
+    static const int WIDTH;
+    static const int HEIGHT;
+
     MainWindow();
 
     bool isAlive();
