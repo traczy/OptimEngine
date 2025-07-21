@@ -5,7 +5,7 @@
 #include <chrono>
 
 #include "windowing/Mainwindow.h"
-#include "RenderObjects/Object2D.h"
+#include "RenderObjects/Object.h"
 
 const int MainWindow::WIDTH = 800;
 const int MainWindow::HEIGHT = 600;
@@ -108,7 +108,7 @@ void MainWindow::exec()
         4, 5, 1, 1, 0, 4  // Bottom
     };
 
-    Object2D* obj = new Object2D(vertices, indices, 48, 36);
+    Object* obj = new Object(vertices, indices, 48, 36);
     if (!obj->compileShader())
     {
         std::cout << "error compiling shaders" << std::endl;
