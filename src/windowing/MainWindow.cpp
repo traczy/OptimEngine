@@ -86,17 +86,18 @@ void MainWindow::processInput()
 void MainWindow::exec()
 {
     // Define interleaved vertices with positions and colors (using double)
-    float* vertices = new float[48]{
+    float* vertices = new float[40]{
+        // Positions          // Texture Coords
         // Front face
-        -0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // Bottom-left
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // Bottom-right
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // Top-right
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // Top-left
         // Back face
-        -0.5f, -0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f, 0.5f, 1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f, 0.5f, 1.0f, 1.0f
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // Bottom-right
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // Top-right
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // Top-left
     };
 
     unsigned int* indices = new unsigned int[36]{
@@ -108,7 +109,7 @@ void MainWindow::exec()
         4, 5, 1, 1, 0, 4  // Bottom
     };
 
-    Object* obj = new Object(vertices, indices, 48, 36);
+    Object* obj = new Object(vertices, indices, 40, 36);
     if (!obj->compileShader())
     {
         std::cout << "error compiling shaders" << std::endl;
@@ -118,6 +119,11 @@ void MainWindow::exec()
     if (!obj->buildGeometry())
     {
         std::cout << "error building geometry" << std::endl;
+        delete obj;
+        return;
+    }
+    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Albedo.jpg"))
+    {
         delete obj;
         return;
     }
@@ -143,6 +149,7 @@ void MainWindow::exec()
             glfwPollEvents();
         else
             std::cout << "should close" << std::endl;
+            
         const char* glfwError;
         if (glfwGetError(&glfwError) != GLFW_NO_ERROR) {
             std::cout << "GLFW Error: " << glfwError << std::endl;

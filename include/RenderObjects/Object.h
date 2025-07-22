@@ -16,6 +16,7 @@ public:
 
     void render();
 
+    bool loadTexture(const char* path);
     bool compileShader();
     bool buildGeometry();
 
@@ -30,6 +31,7 @@ private:
     unsigned int elementHandle;
 
     unsigned int shaderProgramHandle;
+    unsigned int textureHandle;
 };
 
 #endif // OBJECT_H

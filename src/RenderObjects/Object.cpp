@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <stb_image.h>
 #include <iostream>
 
 Object::Object()
@@ -19,6 +20,7 @@ Object::Object()
     this->vcDataHandle = 0;
     this->elementHandle = 0;
     this->shaderProgramHandle = 0;
+    this->textureHandle = 0;
 
     this->dataSize = 0;
     this->elementSize = 0;
@@ -30,6 +32,12 @@ Object::Object(float* vcData, unsigned int* elementData, size_t vcSize, size_t e
     this->elementBufferData = elementData;
     this->dataSize = vcSize;
     this->elementSize = eSize;
+
+    this->attributeHandle = 0;
+    this->vcDataHandle = 0;
+    this->elementHandle = 0;
+    this->shaderProgramHandle = 0;
+    this->textureHandle = 0;
 }
 
 Object::~Object()
@@ -47,6 +55,35 @@ Object::~Object()
         glDeleteBuffers(1, &this->elementHandle);
     if (this->shaderProgramHandle != 0)
         glDeleteProgram(this->shaderProgramHandle);
+    if (this->textureHandle != 0)
+        glDeleteTextures(1, &this->textureHandle);
+}
+
+bool Object::loadTexture(const char* path) {
+    glGenTextures(1, &this->textureHandle);
+    glBindTexture(GL_TEXTURE_2D, this->textureHandle);
+
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // Trilinear filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Load image using stb_image
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true); // Flip texture vertically
+    unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
+    if (data) {
+        GLenum format = (nrChannels == 3) ? GL_RGB : GL_RGBA;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    } else {
+        std::cout << "Failed to load texture: " << path << std::endl;
+        return false;
+    }
+
+    stbi_image_free(data);
+    return true;
 }
 
 bool Object::compileShader()
@@ -122,7 +159,7 @@ bool Object::buildGeometry()
         }
 
         // Position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         if (glGetError() != GL_NO_ERROR)
         {
@@ -130,8 +167,8 @@ bool Object::buildGeometry()
             return false;
         }
 
-        // Color attribute
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        // TexCoord attribute
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
         if (glGetError() != GL_NO_ERROR)
         {
