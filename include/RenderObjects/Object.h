@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <vector>
 
+class PointLight;
+
 class Object
 {
 public:
@@ -14,6 +16,8 @@ public:
 
     // TODO: Implement
     void setVertexData(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize);
+
+    void addAffectingLight(PointLight* light);
 
     void render();
 
@@ -36,6 +40,11 @@ private:
 
     unsigned int shaderProgramHandle;
     std::vector<unsigned int> textureHandles;
+
+    std::vector<PointLight*> affectingLights;
+
+    void bindTexturesForRender();
+    void setLightingInShader();
 };
 
 #endif // OBJECT_H

@@ -2,6 +2,7 @@
 #include "shaders/VertexShader.h"
 #include "shaders/FragmentShader.h"
 #include "windowing/Mainwindow.h"
+#include "Lighting/PointLight.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -69,6 +70,16 @@ Object::~Object()
         if (handle != 0)
             glDeleteTextures(1, &handle);
     }
+
+    for (PointLight* light : this->affectingLights)
+    {
+        delete light;
+    }
+}
+
+void Object::addAffectingLight(PointLight* light)
+{
+    this->affectingLights.push_back(light);
 }
 
 bool Object::loadTexture(const char* path) {
@@ -249,23 +260,9 @@ void Object::render()
         glUseProgram(this->shaderProgramHandle);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after use program" << std::endl;
 
-        // Bind textures
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, this->textureHandles[0]);
-        glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "texture1"), 0);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, this->textureHandles[1]);
-        glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "normalMap"), 1);
+        bindTexturesForRender();
 
-        // Light properties
-        glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-        glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-        glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
-
-        // Set lighting uniforms
-        glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPos"), 1, glm::value_ptr(lightPos));
-        glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColor"), 1, glm::value_ptr(lightColor));
-        glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "viewPos"), 1, glm::value_ptr(viewPos));
+        setLightingInShader();
 
         glm::mat4 model = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
 
@@ -285,4 +282,35 @@ void Object::render()
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after draw" << std::endl;
 
     }
+}
+
+void Object::bindTexturesForRender()
+{
+    // Bind textures
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, this->textureHandles[0]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "texture1"), 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, this->textureHandles[1]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "normalMap"), 1);
+}
+
+void Object::setLightingInShader()
+{
+    // Set lighting uniforms
+    std::vector<glm::vec3> lightPositions;
+    for (PointLight* light : this->affectingLights)
+    {
+        lightPositions.push_back(glm::vec3(light->getX(), light->getY(), light->getZ()));
+    }
+    std::vector<glm::vec3> lightColors;
+    for (PointLight* light : this->affectingLights)
+    {
+        lightColors.push_back(glm::vec3(light->getRed(), light->getGreen(), light->getBlue()));
+    }
+    glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPositions"), this->affectingLights.size(), &lightPositions[0][0]);
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColors"), this->affectingLights.size(), &lightColors[0][0]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numLights"), (int)this->affectingLights.size());
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "viewPos"), 1, glm::value_ptr(viewPos));
 }
