@@ -2,6 +2,7 @@
 #include "shaders/VertexShader.h"
 #include "shaders/FragmentShader.h"
 #include "windowing/Mainwindow.h"
+#include "Lighting/PointLight.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -13,55 +14,79 @@
 
 Object::Object()
 {
-    this->vertexAndColorData = nullptr;
+    this->vData = nullptr;
     this->elementBufferData = nullptr;
+    this->tangentData = nullptr;
 
     this->attributeHandle = 0;
-    this->vcDataHandle = 0;
+    this->vDataHandle = 0;
     this->elementHandle = 0;
+    this->tangentHandle = 0;
     this->shaderProgramHandle = 0;
-    this->textureHandle = 0;
 
     this->dataSize = 0;
     this->elementSize = 0;
+    this->tangentSize = 0;
 }
 
-Object::Object(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize)
+Object::Object(float* vcData, unsigned int* elementData, float* tangentData, size_t vcSize, size_t eSize, size_t tangentSize)
 {
-    this->vertexAndColorData = vcData;
+    this->vData = vcData;
     this->elementBufferData = elementData;
+    this->tangentData = tangentData;
     this->dataSize = vcSize;
     this->elementSize = eSize;
+    this->tangentSize = tangentSize;
 
     this->attributeHandle = 0;
-    this->vcDataHandle = 0;
+    this->vDataHandle = 0;
     this->elementHandle = 0;
+    this->tangentHandle = 0;
     this->shaderProgramHandle = 0;
-    this->textureHandle = 0;
 }
 
 Object::~Object()
 {
-    if (this->vertexAndColorData)
-        delete this->vertexAndColorData;
+    if (this->vData)
+        delete this->vData;
     if (this->elementBufferData)
         delete this->elementBufferData;
+    if (this->tangentData)
+        delete this->tangentData;
 
     if (this->attributeHandle != 0)
         glDeleteVertexArrays(1, &this->attributeHandle);
-    if (this->vcDataHandle != 0)
-        glDeleteBuffers(1, &this->vcDataHandle);
+    if (this->vDataHandle != 0)
+        glDeleteBuffers(1, &this->vDataHandle);
     if (this->elementHandle != 0)
         glDeleteBuffers(1, &this->elementHandle);
+    if (this->tangentHandle != 0)
+        glDeleteBuffers(1, &this->tangentHandle);
     if (this->shaderProgramHandle != 0)
         glDeleteProgram(this->shaderProgramHandle);
-    if (this->textureHandle != 0)
-        glDeleteTextures(1, &this->textureHandle);
+
+    for (unsigned int handle : this->textureHandles)
+    {
+        if (handle != 0)
+            glDeleteTextures(1, &handle);
+    }
+
+    for (PointLight* light : this->affectingLights)
+    {
+        delete light;
+    }
+}
+
+void Object::addAffectingLight(PointLight* light)
+{
+    this->affectingLights.push_back(light);
 }
 
 bool Object::loadTexture(const char* path) {
-    glGenTextures(1, &this->textureHandle);
-    glBindTexture(GL_TEXTURE_2D, this->textureHandle);
+    this->textureHandles.push_back(0);
+    unsigned int* textureHandle = &this->textureHandles[this->textureHandles.size() - 1];
+    glGenTextures(1, textureHandle);
+    glBindTexture(GL_TEXTURE_2D, *textureHandle);
 
     // Set texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -136,11 +161,12 @@ bool Object::compileShader()
 
 bool Object::buildGeometry()
 {
-    if (this->vertexAndColorData && this->dataSize > 0 && this->elementBufferData && this->elementSize > 0)
+    if (this->vData && this->dataSize > 0 && this->elementBufferData && this->elementSize > 0)
     {
         glGenVertexArrays(1, &this->attributeHandle);
-        glGenBuffers(1, &this->vcDataHandle);
+        glGenBuffers(1, &this->vDataHandle);
         glGenBuffers(1, &this->elementHandle);
+        glGenBuffers(1, &this->tangentHandle);
         if (glGetError() != GL_NO_ERROR)
         {
             std::cout << "GL Error after generating buffers" << std::endl;
@@ -150,8 +176,8 @@ bool Object::buildGeometry()
         glBindVertexArray(this->attributeHandle);
 
         // Bind and fill interleaved vertices
-        glBindBuffer(GL_ARRAY_BUFFER, this->vcDataHandle);
-        glBufferData(GL_ARRAY_BUFFER, this->dataSize * sizeof(float), this->vertexAndColorData, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, this->vDataHandle);
+        glBufferData(GL_ARRAY_BUFFER, this->dataSize * sizeof(float), this->vData, GL_STATIC_DRAW);
         if (glGetError() != GL_NO_ERROR)
         {
             std::cout << "GL Error after setting VBO data" << std::endl;
@@ -172,7 +198,34 @@ bool Object::buildGeometry()
         glEnableVertexAttribArray(1);
         if (glGetError() != GL_NO_ERROR)
         {
-            std::cout << "GL Error after setting color attribute" << std::endl;
+            std::cout << "GL Error after setting UV attribute" << std::endl;
+            return false;
+        }
+
+        // Setup tangent buffer
+        glBindBuffer(GL_ARRAY_BUFFER, this->tangentHandle);
+        glBufferData(GL_ARRAY_BUFFER, this->tangentSize * sizeof(float), this->tangentData, GL_STATIC_DRAW);
+        if (glGetError() != GL_NO_ERROR)
+        {
+            std::cout << "GL Error after setting tangent data" << std::endl;
+            return false;
+        }
+
+        // Tangent attribute
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(2);
+        if (glGetError() != GL_NO_ERROR)
+        {
+            std::cout << "GL Error after setting tangent attribute" << std::endl;
+            return false;
+        }
+
+        // Bitangent attribute
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(3);
+        if (glGetError() != GL_NO_ERROR)
+        {
+            std::cout << "GL Error after setting bi-tangent attribute" << std::endl;
             return false;
         }
 
@@ -202,10 +255,14 @@ void Object::render()
         return;
     }
 
-    if (this->shaderProgramHandle != 0 && this->attributeHandle != 0 && this->vcDataHandle != 0 && this->elementHandle != 0)
+    if (this->shaderProgramHandle != 0 && this->attributeHandle != 0 && this->vDataHandle != 0 && this->elementHandle != 0)
     {
         glUseProgram(this->shaderProgramHandle);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after use program" << std::endl;
+
+        bindTexturesForRender();
+
+        setLightingInShader();
 
         glm::mat4 model = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
 
@@ -225,4 +282,35 @@ void Object::render()
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after draw" << std::endl;
 
     }
+}
+
+void Object::bindTexturesForRender()
+{
+    // Bind textures
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, this->textureHandles[0]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "texture1"), 0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, this->textureHandles[1]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "normalMap"), 1);
+}
+
+void Object::setLightingInShader()
+{
+    // Set lighting uniforms
+    std::vector<glm::vec3> lightPositions;
+    for (PointLight* light : this->affectingLights)
+    {
+        lightPositions.push_back(glm::vec3(light->getX(), light->getY(), light->getZ()));
+    }
+    std::vector<glm::vec3> lightColors;
+    for (PointLight* light : this->affectingLights)
+    {
+        lightColors.push_back(glm::vec3(light->getRed(), light->getGreen(), light->getBlue()));
+    }
+    glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPositions"), this->affectingLights.size(), &lightPositions[0][0]);
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColors"), this->affectingLights.size(), &lightColors[0][0]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numLights"), (int)this->affectingLights.size());
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "viewPos"), 1, glm::value_ptr(viewPos));
 }

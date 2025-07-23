@@ -1,11 +1,13 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <iostream>
 #include <cmath>
 #include <chrono>
 
 #include "windowing/Mainwindow.h"
 #include "RenderObjects/Object.h"
+#include "Lighting/PointLight.h"
 
 const int MainWindow::WIDTH = 800;
 const int MainWindow::HEIGHT = 600;
@@ -60,6 +62,10 @@ MainWindow::MainWindow()
         std::cout << "GLDebug output not supported" << std::endl;
     }
 
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
     // Set viewport and callback
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(this->window, framebufferSizeCallback);
@@ -86,7 +92,7 @@ void MainWindow::processInput()
 void MainWindow::exec()
 {
     // Define interleaved vertices with positions and colors (using double)
-    float* vertices = new float[40]{
+    float* vertices = new float[120]{
         // Positions          // Texture Coords
         // Front face
         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // Bottom-left
@@ -94,22 +100,76 @@ void MainWindow::exec()
          0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // Top-right
         -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // Top-left
         // Back face
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // Bottom-right
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // Top-right
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // Top-left
+         0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-right
+        -0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // Bottom-left
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // Top-left
+         0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // Top-right
+        // Right face
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // Bottom-front
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // Bottom-back
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // Top-back
+         0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // Top-front
+        // Left face
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-back
+        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // Bottom-front
+        -0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // Top-front
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // Top-back
+        // Top face
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, // Front-left
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // Front-right
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // Back-right
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // Back-left
+        // Bottom face
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Back-left
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // Back-right
+         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, // Front-right
+        -0.5f, -0.5f,  0.5f,  0.0f, 1.0f  // Front-left
+    };
+
+    // Tangent vectors (3 floats per vertex)
+    float* tangents = new float[144] {
+        // Front face (normal: 0,0,1, tangent: 1,0,0, bitangent: 0,1,0)
+        1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Bottom-left
+        1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Bottom-right
+        1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Top-right
+        1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Top-left
+        // Back face (normal: 0,0,-1, tangent: -1,0,0, bitangent: 0,1,0)
+       -1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Bottom-right
+       -1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Bottom-left
+       -1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Top-left
+       -1.0f, 0.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Top-right
+        // Right face (normal: 1,0,0, tangent: 0,0,-1, bitangent: 0,1,0)
+        0.0f, 0.0f,-1.0f,  0.0f, 1.0f, 0.0f, // Bottom-front
+        0.0f, 0.0f,-1.0f,  0.0f, 1.0f, 0.0f, // Bottom-back
+        0.0f, 0.0f,-1.0f,  0.0f, 1.0f, 0.0f, // Top-back
+        0.0f, 0.0f,-1.0f,  0.0f, 1.0f, 0.0f, // Top-front
+        // Left face (normal: -1,0,0, tangent: 0,0,1, bitangent: 0,1,0)
+        0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f, // Bottom-back
+        0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f, // Bottom-front
+        0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f, // Top-front
+        0.0f, 0.0f, 1.0f,  0.0f, 1.0f, 0.0f, // Top-back
+        // Top face (normal: 0,1,0, tangent: 1,0,0, bitangent: 0,0,-1)
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f,-1.0f, // Front-left
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f,-1.0f, // Front-right
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f,-1.0f, // Back-right
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f,-1.0f, // Back-left
+        // Bottom face (normal: 0,-1,0, tangent: 1,0,0, bitangent: 0,0,1)
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, // Back-left
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, // Back-right
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f, // Front-right
+        1.0f, 0.0f, 0.0f,  0.0f, 0.0f, 1.0f  // Front-left
     };
 
     unsigned int* indices = new unsigned int[36]{
-        0, 1, 2, 2, 3, 0, // Front
-        1, 5, 6, 6, 2, 1, // Right
-        5, 4, 7, 7, 6, 5, // Back
-        4, 0, 3, 3, 7, 4, // Left
-        3, 2, 6, 6, 7, 3, // Top
-        4, 5, 1, 1, 0, 4  // Bottom
+        0,  1,  2,  2,  3,  0,  // Front
+        4,  5,  6,  6,  7,  4,  // Back
+        8,  9, 10, 10, 11,  8,  // Right
+        12, 13, 14, 14, 15, 12,  // Left
+        16, 17, 18, 18, 19, 16,  // Top
+        20, 23, 22, 22, 21, 20   // Bottom (fixed)
     };
 
-    Object* obj = new Object(vertices, indices, 40, 36);
+    Object* obj = new Object(vertices, indices, tangents, 120, 36, 144);
     if (!obj->compileShader())
     {
         std::cout << "error compiling shaders" << std::endl;
@@ -127,6 +187,16 @@ void MainWindow::exec()
         delete obj;
         return;
     }
+    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Normal.jpg"))
+    {
+        delete obj;
+        return;
+    }
+
+    PointLight* light = new PointLight(1.2f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f);
+    PointLight* lightTwo = new PointLight(-1.2f, -1.0f, 2.0f, 0.0f, 0.5f, 0.0f);
+    obj->addAffectingLight(light);
+    obj->addAffectingLight(lightTwo);
 
     auto begin = std::chrono::high_resolution_clock::now();
     size_t iters = 0;
@@ -137,7 +207,7 @@ void MainWindow::exec()
         processInput();
 
         // Rendering
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after clear" << std::endl;
 
