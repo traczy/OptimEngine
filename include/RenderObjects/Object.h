@@ -2,12 +2,13 @@
 #define OBJECT_H
 
 #include <cstddef>
+#include <vector>
 
 class Object
 {
 public:
     Object();
-    Object(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize);
+    Object(float* vcData, unsigned int* elementData, float* tangentData, size_t vcSize, size_t eSize, size_t tangentSize);
 
     ~Object();
 
@@ -21,17 +22,20 @@ public:
     bool buildGeometry();
 
 private:
-    float* vertexAndColorData;
+    float* vData;
     unsigned int* elementBufferData;
+    float* tangentData;
     size_t dataSize;
     size_t elementSize;
+    size_t tangentSize;
 
     unsigned int attributeHandle;
-    unsigned int vcDataHandle;
+    unsigned int vDataHandle;
     unsigned int elementHandle;
+    unsigned int tangentHandle;
 
     unsigned int shaderProgramHandle;
-    unsigned int textureHandle;
+    std::vector<unsigned int> textureHandles;
 };
 
 #endif // OBJECT_H
