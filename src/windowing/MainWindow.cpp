@@ -8,6 +8,8 @@
 #include "windowing/Mainwindow.h"
 #include "RenderObjects/Object.h"
 #include "Lighting/PointLight.h"
+#include "Camera/Camera.h"
+#include "Camera/CameraController.h"
 
 const int MainWindow::WIDTH = 800;
 const int MainWindow::HEIGHT = 600;
@@ -197,6 +199,9 @@ void MainWindow::exec()
     PointLight* lightTwo = new PointLight(-1.2f, -1.0f, 2.0f, 0.0f, 0.5f, 0.0f);
     obj->addAffectingLight(light);
     obj->addAffectingLight(lightTwo);
+
+    // Setup camera
+    CameraController::getInstance()->addCamera(new Camera(this, 0.f, 0.f, -3.f, 45.f));
 
     auto begin = std::chrono::high_resolution_clock::now();
     size_t iters = 0;

@@ -3,6 +3,8 @@
 #include "shaders/FragmentShader.h"
 #include "windowing/Mainwindow.h"
 #include "Lighting/PointLight.h"
+#include "Camera/CameraController.h"
+#include "Camera/Camera.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -266,14 +268,13 @@ void Object::render()
 
         glm::mat4 model = glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f));
 
-        // TODO: Set to Universal Buffer Object
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)MainWindow::WIDTH / MainWindow::HEIGHT, 0.1f, 100.0f);
+        // TODO: Set view and projection of camera to UBO (universal buffer object)?
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
 
         // Pass matrices to shader
         glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "view"), 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "view"), 1, GL_FALSE, glm::value_ptr(cam->getView()));
+        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "projection"), 1, GL_FALSE, glm::value_ptr(cam->getProjection()));
 
         glBindVertexArray(this->attributeHandle);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after bind VAO" << std::endl;
@@ -303,11 +304,13 @@ void Object::setLightingInShader()
     {
         lightPositions.push_back(glm::vec3(light->getX(), light->getY(), light->getZ()));
     }
+
     std::vector<glm::vec3> lightColors;
     for (PointLight* light : this->affectingLights)
     {
         lightColors.push_back(glm::vec3(light->getRed(), light->getGreen(), light->getBlue()));
     }
+    
     glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
     glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPositions"), this->affectingLights.size(), &lightPositions[0][0]);
     glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColors"), this->affectingLights.size(), &lightColors[0][0]);
