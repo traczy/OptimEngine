@@ -89,6 +89,10 @@ void MainWindow::processInput()
 {
     if (glfwGetKey(this->window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(this->window, true);
+    else if (glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+    }
 }
 
 void MainWindow::exec()

@@ -7,10 +7,10 @@ Transform::Transform()
     setScale(1.f, 1.f, 1.f);
 }
 
-Transform::Transform(float x, float y, float z, float roll, float pitch, float yaw, float scaleX, float scaleY, float scaleZ)
+Transform::Transform(float x, float y, float z, float pitch, float yaw, float roll, float scaleX, float scaleY, float scaleZ)
 {
     setPosition(x, y, z);
-    setRotation(roll, pitch, yaw);
+    setRotation(pitch, yaw, roll);
     setScale(scaleX, scaleY, scaleZ);
 }
 
@@ -26,9 +26,9 @@ void Transform::setPosition(float x, float y, float z)
     this->position = std::vector<float> { x, y, z };
 }
 
-void Transform::setRotation(float roll, float pitch, float yaw)
+void Transform::setRotation(float pitch, float yaw, float roll)
 {
-    this->rotation = std::vector<float> { roll, pitch, yaw };
+    this->rotation = std::vector<float> { pitch, yaw, roll };
 }
 
 void Transform::setScale(float x, float y, float z)

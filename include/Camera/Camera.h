@@ -3,6 +3,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Utility/Transform.h"
+
 class MainWindow;
 
 class Camera
@@ -13,6 +15,7 @@ public:
     Camera(MainWindow* context, float x, float y, float z, float fovY);
 
     void setLocation(float x, float y, float z);
+    void setRotation(float pitch, float yaw, float roll);
     void setFOVY(float fovY);
     void setNearClippingDistance(float nearClip);
     void setFarClippingDistance(float farClip);
@@ -21,9 +24,7 @@ public:
     glm::mat4 getView() { return this->view; }
 
 private:
-    float x;
-    float y;
-    float z;
+    Transform transform;
     float fovY;
     float nearClip;
     float farClip;

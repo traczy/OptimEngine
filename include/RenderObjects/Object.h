@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "Utility/Transform.h"
+
 class PointLight;
 
 class Object
@@ -13,6 +15,14 @@ public:
     Object(float* vcData, unsigned int* elementData, float* tangentData, size_t vcSize, size_t eSize, size_t tangentSize);
 
     ~Object();
+
+    std::vector<float> getPosition() { return this->transform.getPosition(); }
+    std::vector<float> getRotation() { return this->transform.getRotation(); }
+    std::vector<float> getScale() { return this->transform.getScale(); }
+
+    void setPosition(float x, float y, float z) { this->transform.setPosition(x, y, z); }
+    void setRotation(float pitch, float yaw, float roll) { this->transform.setRotation(pitch, yaw, roll); }
+    void setScale(float x, float y, float z) { this->transform.setScale(x, y, z); }
 
     // TODO: Implement
     void setVertexData(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize);
@@ -26,6 +36,8 @@ public:
     bool buildGeometry();
 
 private:
+    Transform transform;
+
     float* vData;
     unsigned int* elementBufferData;
     float* tangentData;

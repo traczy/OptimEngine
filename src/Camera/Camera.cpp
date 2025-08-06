@@ -5,14 +5,15 @@
 
 Camera::Camera(MainWindow* context)
 {
-    setLocation(0.f, 0.f, 0.f);
     setFOVY(45.f);
     this->nearClip = 0.1f;
     this->farClip = 100.0f;
     this->context = context;
 
     this->projection = glm::perspective(glm::radians(this->fovY), (float)MainWindow::WIDTH / MainWindow::HEIGHT, this->nearClip, this->farClip);
-    this->view = glm::translate(glm::mat4(1.0f), glm::vec3(this->x, this->y, this->z));
+
+    std::vector<float> position = this->transform.getPosition();
+    this->view = glm::translate(glm::mat4(1.0f), glm::vec3(position[0], position[1], position[2]));
 }
 
 Camera::Camera(MainWindow* context, float x, float y, float z, float fovY)
@@ -24,12 +25,15 @@ Camera::Camera(MainWindow* context, float x, float y, float z, float fovY)
 
 void Camera::setLocation(float x, float y, float z)
 {
-    this->x = x;
-    this->y = y;
-    this->z = z;
+    this->transform.setPosition(x, y, z);
 
     // Update view matrix to new location
-    this->view = glm::translate(glm::mat4(1.0f), glm::vec3(this->x, this->y, this->z)); 
+    this->view = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z)); 
+}
+
+void Camera::setRotation(float pitch, float yaw, float roll)
+{
+    this->transform.setRotation(pitch, yaw, roll);
 }
 
 void Camera::setFOVY(float fovY)
