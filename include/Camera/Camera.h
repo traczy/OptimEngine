@@ -15,7 +15,7 @@ public:
     Camera(MainWindow* context, float x, float y, float z, float fovY);
 
     void setLocation(float x, float y, float z);
-    void setRotation(float pitch, float yaw, float roll);
+    void setRotation(float roll, float pitch, float yaw);
     void setFOVY(float fovY);
     void setNearClippingDistance(float nearClip);
     void setFarClippingDistance(float farClip);

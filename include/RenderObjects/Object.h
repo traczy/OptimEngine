@@ -21,7 +21,7 @@ public:
     std::vector<float> getScale() { return this->transform.getScale(); }
 
     void setPosition(float x, float y, float z) { this->transform.setPosition(x, y, z); }
-    void setRotation(float pitch, float yaw, float roll) { this->transform.setRotation(pitch, yaw, roll); }
+    void setRotation(float roll, float pitch, float yaw) { this->transform.setRotation(roll, pitch, yaw); }
     void setScale(float x, float y, float z) { this->transform.setScale(x, y, z); }
 
     // TODO: Implement

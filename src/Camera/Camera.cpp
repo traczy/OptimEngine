@@ -31,9 +31,9 @@ void Camera::setLocation(float x, float y, float z)
     this->view = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z)); 
 }
 
-void Camera::setRotation(float pitch, float yaw, float roll)
+void Camera::setRotation(float roll, float pitch, float yaw)
 {
-    this->transform.setRotation(pitch, yaw, roll);
+    this->transform.setRotation(roll, pitch, yaw);
 }
 
 void Camera::setFOVY(float fovY)
