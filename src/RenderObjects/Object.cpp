@@ -267,20 +267,19 @@ void Object::render()
         setLightingInShader();
 
         // Scale, rotate, then translate
-
         std::vector<float> scale = this->transform.getScale();
         glm::mat4 model = glm::mat4(1.0f);
-        //model = glm::scale(model, glm::vec3(scale[0], scale[1], scale[2]));
+        model = glm::scale(model, glm::vec3(scale[0], scale[1], scale[2]));
 
         // Apply transform rotation first, then animate model by time (rotating based on the time)
         std::vector<float> rot = this->transform.getRotation();
-        //model = glm::rotate(model, glm::radians(rot[1]), glm::vec3(0.f, 0.f, 1.f)); // Yaw rotation
-        //model = glm::rotate(model, glm::radians(rot[0]), glm::vec3(0.f, 1.f, 0.f)); // Pitch rotation
-        //model = glm::rotate(model, glm::radians(rot[2]), glm::vec3(1.f, 0.f, 0.f)); // Roll rotation
+        model = glm::rotate(model, glm::radians(rot[1]), glm::vec3(0.f, 1.f, 0.f)); // Yaw rotation
+        model = glm::rotate(model, glm::radians(rot[0]), glm::vec3(1.f, 0.f, 0.f)); // Pitch rotation
+        model = glm::rotate(model, glm::radians(rot[2]), glm::vec3(0.f, 0.f, 1.f)); // Roll rotation
         model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 0.0f)); // Animation rotation
 
         std::vector<float> pos = this->transform.getPosition();
-        //model = glm::translate(model, glm::vec3(pos[0], pos[1], pos[2]));
+        model = glm::translate(model, glm::vec3(pos[0], pos[1], pos[2]));
 
         // TODO: Set view and projection of camera to UBO (universal buffer object)?
         Camera* cam = CameraController::getInstance()->getActiveCamera();

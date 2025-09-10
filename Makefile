@@ -10,7 +10,7 @@ INCLUDE_DIRS = -I../../glfw-3.4/include/ -I../../glad/include/ -I./include/ -I..
 LINK = -lkernel32 -lUser32 -lGdi32 -L"../../glfw-3.4/lib-mingw-w64/" -lglfw3dll -L"C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/" -lOpenGL32 -mconsole
 
 CXX = g++
-CXXFLAGS = $(CXX) -Wall --std=c++17
+CXXFLAGS = $(CXX) -Wall --std=c++20
 
 CXXFLAGS_DEBUG = $(CXXFLAGS) -O0 -g
 CXXFLAGS_RELEASE = $(CXXFLAGS) -O2

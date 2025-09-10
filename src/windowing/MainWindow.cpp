@@ -10,10 +10,12 @@
 #include "Lighting/PointLight.h"
 #include "Camera/Camera.h"
 #include "Camera/CameraController.h"
+#include "Utility/Constants.h"
 
 const int MainWindow::WIDTH = 800;
 const int MainWindow::HEIGHT = 600;
 
+// Required to be static via glfw callback
 double MainWindow::mouseLastX = 0.0;
 double MainWindow::mouseLastY = 0.0;
 bool MainWindow::firstMouseCapture = true;
@@ -111,8 +113,8 @@ void MainWindow::mouseCallback(GLFWwindow* window, double xpos, double ypos)
     mouseLastY = ypos;
 
     // Apply sensitivity
-    xoffset *= 0.05f;
-    yoffset *= 0.05f;
+    xoffset *= Constants::cameraRotSpeed;
+    yoffset *= Constants::cameraRotSpeed;
 
     // Update yaw and pitch
     Camera* cam = CameraController::getInstance()->getActiveCamera();
@@ -133,49 +135,41 @@ void MainWindow::processInput(float timeDelta)
         glfwSetWindowShouldClose(this->window, true);
     else if (glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS)
     {
-        Camera* cam = CameraController::getInstance()->getActiveCamera();
-
         // Use forward vector to move forward in current facing direction
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
         glm::vec3 fv = cam->getForwardVector();
-        std::vector<float> pos = cam->getPosition();
-        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
-        posMat += 0.05f * timeDelta * glm::normalize(fv);
-        cam->setLocation(posMat[0], posMat[1], posMat[2]);
-
-
+        moveActiveCamera(fv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat + moveVec;
+        });
     }
     else if (glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS)
     {
+        // Use forward vector to move backward from current facing direction
         Camera* cam = CameraController::getInstance()->getActiveCamera();
-
-        // Use forward vector to move backward from the current facing direction
         glm::vec3 fv = cam->getForwardVector();
-        std::vector<float> pos = cam->getPosition();
-        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
-        posMat -= 0.05f * timeDelta * glm::normalize(fv);
-        cam->setLocation(posMat[0], posMat[1], posMat[2]);
+        moveActiveCamera(fv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat - moveVec;
+        });
     }
     else if (glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS)
     {
-        Camera* cam = CameraController::getInstance()->getActiveCamera();
-
         // Use forward vector to calculate the right facing direction for lateral movement of the camera
-        glm::vec3 rv = glm::cross(cam->getForwardVector(), glm::vec3(0.f, 1.f, 0.f));
-        std::vector<float> pos = cam->getPosition();
-        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
-        posMat += 0.05f * timeDelta * glm::normalize(rv);
-        cam->setLocation(posMat[0], posMat[1], posMat[2]);
+        // to the right
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+        glm::vec3 rv = glm::cross(cam->getForwardVector(), Constants::upVector);
+        moveActiveCamera(rv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat + moveVec;
+        });
     }
     else if (glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS)
     {
+        // Use forward vector to calculate the right facing direction for lateral movement of the camera
+        // to the left
         Camera* cam = CameraController::getInstance()->getActiveCamera();
-
-        // Use forward vector to calculate the right facing direction for lateral movement of the camera to the left
-        glm::vec3 rv = glm::cross(cam->getForwardVector(), glm::vec3(0.f, 1.f, 0.f));
-        std::vector<float> pos = cam->getPosition();
-        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
-        posMat -= 0.05f * timeDelta * glm::normalize(rv);
-        cam->setLocation(posMat[0], posMat[1], posMat[2]);
+        glm::vec3 rv = glm::cross(cam->getForwardVector(), Constants::upVector);
+        moveActiveCamera(rv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat - moveVec;
+        });
     }
 }
 

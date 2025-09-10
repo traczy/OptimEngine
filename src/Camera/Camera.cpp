@@ -1,5 +1,6 @@
 #include "Camera/Camera.h"
 #include "windowing/Mainwindow.h"
+#include "Utility/Constants.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
@@ -16,7 +17,7 @@ Camera::Camera(MainWindow* context)
     updateForwardVector();
 
     std::vector<float> position = this->transform.getPosition();
-    this->view = glm::lookAt(glm::vec3(position[0], position[1], position[2]), this->fv, glm::vec3(0.f, 1.f, 0.f));
+    this->view = glm::lookAt(glm::vec3(position[0], position[1], position[2]), this->fv, Constants::upVector);
 }
 
 Camera::Camera(MainWindow* context, float x, float y, float z, float fovY, float nearClip, float farClip)
@@ -38,7 +39,7 @@ void Camera::setLocation(float x, float y, float z)
 
     // Update view matrix to new location
     glm::vec3 pos = { x, y, z };
-    this->view = glm::lookAt(pos, pos + this->fv, glm::vec3(0.f, 1.f, 0.f));
+    this->view = glm::lookAt(pos, pos + this->fv, Constants::upVector);
 }
 
 void Camera::setRotation(float pitch, float yaw, float roll)
@@ -49,7 +50,7 @@ void Camera::setRotation(float pitch, float yaw, float roll)
 
     auto p = this->transform.getPosition();
     glm::vec3 pos = { p[0], p[1], p[2] };
-    this->view = glm::lookAt(pos, pos + this->fv, glm::vec3(0.f, 1.f, 0.f));
+    this->view = glm::lookAt(pos, pos + this->fv, Constants::upVector);
 }
 
 void Camera::setFOVY(float fovY)
