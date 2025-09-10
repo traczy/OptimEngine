@@ -9,6 +9,10 @@ public:
     static const int WIDTH;
     static const int HEIGHT;
 
+    static double mouseLastX;
+    static double mouseLastY;
+    static bool firstMouseCapture;
+
     MainWindow();
 
     bool isAlive();
@@ -17,6 +21,8 @@ public:
         Handles window resize
     */
     static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+
+    static void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 
     /*!
         Starts render loop

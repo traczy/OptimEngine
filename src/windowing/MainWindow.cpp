@@ -14,6 +14,10 @@
 const int MainWindow::WIDTH = 800;
 const int MainWindow::HEIGHT = 600;
 
+double MainWindow::mouseLastX = 0.0;
+double MainWindow::mouseLastY = 0.0;
+bool MainWindow::firstMouseCapture = true;
+
 void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     std::cout << "GL DEBUG: " << message << std::endl;
 }
@@ -72,6 +76,12 @@ MainWindow::MainWindow()
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(this->window, framebufferSizeCallback);
 
+    // Set mouse callback
+    glfwSetCursorPosCallback(this->window, mouseCallback);
+
+    // Hide cursor and capture it continuously
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     this->alive = true;
 }
 
@@ -83,6 +93,38 @@ bool MainWindow::isAlive()
 void MainWindow::framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+}
+
+void MainWindow::mouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouseCapture)
+    {
+        firstMouseCapture = false;
+        mouseLastX = xpos;
+        mouseLastY = ypos;
+    }
+
+    // Calculate mouse movement
+    float xoffset = xpos - mouseLastX;
+    float yoffset = mouseLastY - ypos; // Reversed since y-coordinates go bottom-to-top
+    mouseLastX = xpos;
+    mouseLastY = ypos;
+
+    // Apply sensitivity
+    xoffset *= 0.05f;
+    yoffset *= 0.05f;
+
+    // Update yaw and pitch
+    Camera* cam = CameraController::getInstance()->getActiveCamera();
+    auto rot = cam->getRotation();
+    rot[1] += xoffset;
+    rot[0] += yoffset;
+
+    // Clamp pitch to avoid flipping
+    if (rot[0] > 89.0f) rot[0] = 89.0f;
+    if (rot[0] < -89.0f) rot[0] = -89.0f;
+
+    cam->setRotation(rot[0], rot[1], rot[2]);
 }
 
 void MainWindow::processInput(float timeDelta)

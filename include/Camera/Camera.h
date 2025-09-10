@@ -21,6 +21,7 @@ public:
     void setFarClippingDistance(float farClip);
 
     glm::mat4 getProjection() { return this->projection; }
+    glm::vec3 getRotation() { auto rot = this->transform.getRotation(); return glm::vec3(rot[0], rot[1], rot[2]); }
     glm::mat4 getView() { return this->view; }
 
     glm::vec3 getForwardVector() { return this->fv; }

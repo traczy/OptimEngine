@@ -86,6 +86,4 @@ void Camera::updateForwardVector()
     direction.z = sin(glm::radians(rotation[1])) * cos(glm::radians(rotation[0]));
 
     this->fv = glm::normalize(direction);
-
-    std::cout << "fv: " << fv[0] << ", " << fv[1] << ", " << fv[2] << std::endl;
 }
