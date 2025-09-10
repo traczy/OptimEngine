@@ -8,7 +8,7 @@ class Transform
 
 public:
     Transform();
-    Transform(float x, float y, float z, float roll, float pitch, float yaw, float scaleX, float scaleY, float scaleZ);
+    Transform(float x, float y, float z, float pitch, float yaw, float roll, float scaleX, float scaleY, float scaleZ);
     Transform(std::vector<float>& pos, std::vector<float>& rot, std::vector<float>& scale);
 
     std::vector<float> getPosition() { return this->position; }
@@ -16,7 +16,7 @@ public:
     std::vector<float> getScale() { return this->scale; }
 
     void setPosition(float x, float y, float z);
-    void setRotation(float roll, float pitch, float yaw);
+    void setRotation(float pitch, float yaw, float roll);
     void setScale(float x, float y, float z);
 
 private:

@@ -85,13 +85,55 @@ void MainWindow::framebufferSizeCallback(GLFWwindow* window, int width, int heig
     glViewport(0, 0, width, height);
 }
 
-void MainWindow::processInput()
+void MainWindow::processInput(float timeDelta)
 {
     if (glfwGetKey(this->window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(this->window, true);
     else if (glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS)
     {
         Camera* cam = CameraController::getInstance()->getActiveCamera();
+
+        // Use forward vector to move forward in current facing direction
+        glm::vec3 fv = cam->getForwardVector();
+        std::vector<float> pos = cam->getPosition();
+        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
+        posMat += 0.05f * timeDelta * glm::normalize(fv);
+        cam->setLocation(posMat[0], posMat[1], posMat[2]);
+
+
+    }
+    else if (glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+
+        // Use forward vector to move backward from the current facing direction
+        glm::vec3 fv = cam->getForwardVector();
+        std::vector<float> pos = cam->getPosition();
+        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
+        posMat -= 0.05f * timeDelta * glm::normalize(fv);
+        cam->setLocation(posMat[0], posMat[1], posMat[2]);
+    }
+    else if (glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+
+        // Use forward vector to calculate the right facing direction for lateral movement of the camera
+        glm::vec3 rv = glm::cross(cam->getForwardVector(), glm::vec3(0.f, 1.f, 0.f));
+        std::vector<float> pos = cam->getPosition();
+        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
+        posMat += 0.05f * timeDelta * glm::normalize(rv);
+        cam->setLocation(posMat[0], posMat[1], posMat[2]);
+    }
+    else if (glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+
+        // Use forward vector to calculate the right facing direction for lateral movement of the camera to the left
+        glm::vec3 rv = glm::cross(cam->getForwardVector(), glm::vec3(0.f, 1.f, 0.f));
+        std::vector<float> pos = cam->getPosition();
+        glm::vec3 posMat = glm::vec3(pos[0], pos[1], pos[2]);
+        posMat -= 0.05f * timeDelta * glm::normalize(rv);
+        cam->setLocation(posMat[0], posMat[1], posMat[2]);
     }
 }
 
@@ -207,13 +249,22 @@ void MainWindow::exec()
     // Setup camera
     CameraController::getInstance()->addCamera(new Camera(this, 0.f, 0.f, -3.f, 45.f));
 
+    auto camPos = CameraController::getInstance()->getActiveCamera()->getPosition();
+    std::cout << "cam pos: " << camPos[0] << ", " << camPos[1] << ", " << camPos[2] << std::endl;
+    auto objPos = obj->getPosition();
+    std::cout << "obj pos: " << objPos[0] << ", " << objPos[1] << ", " << objPos[2] << std::endl;
+
     auto begin = std::chrono::high_resolution_clock::now();
     size_t iters = 0;
+
+    auto time = (float)glfwGetTime();
+
     // Render loop
     while (!glfwWindowShouldClose(this->window))
     {
         // Input
-        processInput();
+        auto timeDelta = ((float)glfwGetTime()) - time;
+        processInput(timeDelta);
 
         // Rendering
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -221,6 +272,10 @@ void MainWindow::exec()
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after clear" << std::endl;
 
         obj->render();
+        const char* renderError;
+        if (glfwGetError(&renderError) != GLFW_NO_ERROR) {
+            std::cout << "GLFW Error: " << renderError << std::endl;
+        }
 
         // Swap buffers and poll events
         glfwSwapBuffers(this->window);

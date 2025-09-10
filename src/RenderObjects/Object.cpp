@@ -324,7 +324,8 @@ void Object::setLightingInShader()
     for (PointLight* light : this->affectingLights)
         lightColors.push_back(glm::vec3(light->getRed(), light->getGreen(), light->getBlue()));
     
-    glm::vec3 viewPos(0.0f, 0.0f, 3.0f);
+    std::vector<float> camPosition = CameraController::getInstance()->getActiveCamera()->getPosition();
+    glm::vec3 viewPos(camPosition[0], camPosition[1], camPosition[2]);
     glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPositions"), this->affectingLights.size(), &lightPositions[0][0]);
     glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColors"), this->affectingLights.size(), &lightColors[0][0]);
     glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numLights"), (int)this->affectingLights.size());

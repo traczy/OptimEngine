@@ -27,7 +27,7 @@ private:
     bool alive;
     GLFWwindow* window;
 
-    void processInput();
+    void processInput(float timeDelta);
 };
 
 #endif // MAINWINDOW_H
