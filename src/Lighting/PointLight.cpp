@@ -6,15 +6,13 @@ PointLight::PointLight()
 
 PointLight::PointLight(float x, float y, float z, float r, float g, float b)
 {
-    setLocation(x, y, z);
+    this->transform.setPosition(x, y, z);
     setColor(r, g, b);
 }
 
 void PointLight::setLocation(float x, float y, float z)
 {
-    this->x = x;
-    this->y = y;
-    this->z = z;
+    this->transform.setPosition(x, y, z);
 }
 
 void PointLight::setColor(float r, float g, float b)

@@ -10,9 +10,15 @@
 #include "Lighting/PointLight.h"
 #include "Camera/Camera.h"
 #include "Camera/CameraController.h"
+#include "Utility/Constants.h"
 
 const int MainWindow::WIDTH = 800;
 const int MainWindow::HEIGHT = 600;
+
+// Required to be static via glfw callback
+double MainWindow::mouseLastX = 0.0;
+double MainWindow::mouseLastY = 0.0;
+bool MainWindow::firstMouseCapture = true;
 
 void GLAPIENTRY debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     std::cout << "GL DEBUG: " << message << std::endl;
@@ -72,6 +78,12 @@ MainWindow::MainWindow()
     glViewport(0, 0, 800, 600);
     glfwSetFramebufferSizeCallback(this->window, framebufferSizeCallback);
 
+    // Set mouse callback
+    glfwSetCursorPosCallback(this->window, mouseCallback);
+
+    // Hide cursor and capture it continuously
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     this->alive = true;
 }
 
@@ -85,10 +97,80 @@ void MainWindow::framebufferSizeCallback(GLFWwindow* window, int width, int heig
     glViewport(0, 0, width, height);
 }
 
-void MainWindow::processInput()
+void MainWindow::mouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouseCapture)
+    {
+        firstMouseCapture = false;
+        mouseLastX = xpos;
+        mouseLastY = ypos;
+    }
+
+    // Calculate mouse movement
+    float xoffset = xpos - mouseLastX;
+    float yoffset = mouseLastY - ypos; // Reversed since y-coordinates go bottom-to-top
+    mouseLastX = xpos;
+    mouseLastY = ypos;
+
+    // Apply sensitivity
+    xoffset *= Constants::cameraRotSpeed;
+    yoffset *= Constants::cameraRotSpeed;
+
+    // Update yaw and pitch
+    Camera* cam = CameraController::getInstance()->getActiveCamera();
+    auto rot = cam->getRotation();
+    rot[1] += xoffset;
+    rot[0] += yoffset;
+
+    // Clamp pitch to avoid flipping
+    if (rot[0] > 89.0f) rot[0] = 89.0f;
+    if (rot[0] < -89.0f) rot[0] = -89.0f;
+
+    cam->setRotation(rot[0], rot[1], rot[2]);
+}
+
+void MainWindow::processInput(float timeDelta)
 {
     if (glfwGetKey(this->window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(this->window, true);
+    else if (glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        // Use forward vector to move forward in current facing direction
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+        glm::vec3 fv = cam->getForwardVector();
+        moveActiveCamera(fv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat + moveVec;
+        });
+    }
+    else if (glfwGetKey(this->window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        // Use forward vector to move backward from current facing direction
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+        glm::vec3 fv = cam->getForwardVector();
+        moveActiveCamera(fv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat - moveVec;
+        });
+    }
+    else if (glfwGetKey(this->window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        // Use forward vector to calculate the right facing direction for lateral movement of the camera
+        // to the right
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+        glm::vec3 rv = glm::cross(cam->getForwardVector(), Constants::upVector);
+        moveActiveCamera(rv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat + moveVec;
+        });
+    }
+    else if (glfwGetKey(this->window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        // Use forward vector to calculate the right facing direction for lateral movement of the camera
+        // to the left
+        Camera* cam = CameraController::getInstance()->getActiveCamera();
+        glm::vec3 rv = glm::cross(cam->getForwardVector(), Constants::upVector);
+        moveActiveCamera(rv, timeDelta, [] (glm::vec3 posMat, glm::vec3 moveVec) -> glm::vec3 {
+            return posMat - moveVec;
+        });
+    }
 }
 
 void MainWindow::exec()
@@ -203,13 +285,22 @@ void MainWindow::exec()
     // Setup camera
     CameraController::getInstance()->addCamera(new Camera(this, 0.f, 0.f, -3.f, 45.f));
 
+    auto camPos = CameraController::getInstance()->getActiveCamera()->getPosition();
+    std::cout << "cam pos: " << camPos[0] << ", " << camPos[1] << ", " << camPos[2] << std::endl;
+    auto objPos = obj->getPosition();
+    std::cout << "obj pos: " << objPos[0] << ", " << objPos[1] << ", " << objPos[2] << std::endl;
+
     auto begin = std::chrono::high_resolution_clock::now();
     size_t iters = 0;
+
+    auto time = (float)glfwGetTime();
+
     // Render loop
     while (!glfwWindowShouldClose(this->window))
     {
         // Input
-        processInput();
+        auto timeDelta = ((float)glfwGetTime()) - time;
+        processInput(timeDelta);
 
         // Rendering
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -217,6 +308,10 @@ void MainWindow::exec()
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after clear" << std::endl;
 
         obj->render();
+        const char* renderError;
+        if (glfwGetError(&renderError) != GLFW_NO_ERROR) {
+            std::cout << "GLFW Error: " << renderError << std::endl;
+        }
 
         // Swap buffers and poll events
         glfwSwapBuffers(this->window);
