@@ -53,10 +53,11 @@ private:
     unsigned int shaderProgramHandle;
     std::vector<unsigned int> textureHandles;
 
-    std::vector<PointLight*> affectingLights;
+    std::vector<PointLight*> affectingPointLights;
 
     void bindTexturesForRender();
-    void setLightingInShader();
+    void setPointLightingInShader();
+    void setDirectionalLightingInShader();
 };
 
 #endif // OBJECT_H

@@ -8,6 +8,8 @@
 #include "windowing/Mainwindow.h"
 #include "RenderObjects/Object.h"
 #include "Lighting/PointLight.h"
+#include "Lighting/DirectionalLight.h"
+#include "Lighting/DirectionalLightingController.h"
 #include "Camera/Camera.h"
 #include "Camera/CameraController.h"
 #include "Utility/Constants.h"
@@ -276,11 +278,27 @@ void MainWindow::exec()
         delete obj;
         return;
     }
+    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Specular.jpg"))
+    {
+        delete obj;
+        return;
+    }
+    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Roughness.jpg"))
+    {
+        delete obj;
+        return;
+    }
 
-    PointLight* light = new PointLight(1.2f, 1.0f, 2.0f, 1.0f, 1.0f, 1.0f);
-    PointLight* lightTwo = new PointLight(-1.2f, -1.0f, 2.0f, 0.0f, 0.5f, 0.0f);
+    PointLight* light = new PointLight(1.2f, 1.0f, 2.0f, 0.8f, 0.8f, 0.8f);
+    PointLight* lightTwo = new PointLight(-1.2f, -1.0f, 2.0f, 0.8f, 0.8f, 0.8f);
     obj->addAffectingLight(light);
     obj->addAffectingLight(lightTwo);
+
+    // Add directional light
+    DirectionalLight* dirLight = new DirectionalLight();
+    dirLight->setColor(glm::vec3(0.5f, 1.0f, 0.5f));
+    dirLight->setDirection(glm::vec3(1.0f, 0.0f, 0.0f));
+    DirectionalLightingController::getInstance()->addLight(dirLight);
 
     // Setup camera
     CameraController::getInstance()->addCamera(new Camera(this, 0.f, 0.f, -3.f, 45.f));

@@ -23,6 +23,9 @@ public:
     */
     void setColor(float r, float g, float b);
 
+    void setAmbientStrength(const float& ambStr) { ambientStrength = ambStr; }
+    float getAmbientStrength() { return this->ambientStrength; }
+
 private:
     Transform transform;
     float x;
@@ -32,6 +35,8 @@ private:
     float r;
     float g;
     float b;
+
+    float ambientStrength;
 
 };
 
