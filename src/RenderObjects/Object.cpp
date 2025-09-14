@@ -3,6 +3,8 @@
 #include "shaders/FragmentShader.h"
 #include "windowing/Mainwindow.h"
 #include "Lighting/PointLight.h"
+#include "Lighting/DirectionalLight.h"
+#include "Lighting/DirectionalLightingController.h"
 #include "Camera/CameraController.h"
 #include "Camera/Camera.h"
 
@@ -73,7 +75,7 @@ Object::~Object()
             glDeleteTextures(1, &handle);
     }
 
-    for (PointLight* light : this->affectingLights)
+    for (PointLight* light : this->affectingPointLights)
     {
         delete light;
     }
@@ -81,7 +83,7 @@ Object::~Object()
 
 void Object::addAffectingLight(PointLight* light)
 {
-    this->affectingLights.push_back(light);
+    this->affectingPointLights.push_back(light);
 }
 
 bool Object::loadTexture(const char* path) {
@@ -264,7 +266,8 @@ void Object::render()
 
         bindTexturesForRender();
 
-        setLightingInShader();
+        setPointLightingInShader();
+        setDirectionalLightingInShader();
 
         // Scale, rotate, then translate
         std::vector<float> scale = this->transform.getScale();
@@ -307,26 +310,67 @@ void Object::bindTexturesForRender()
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, this->textureHandles[1]);
     glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "normalMap"), 1);
+    glBindTexture(GL_TEXTURE_2D, this->textureHandles[2]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "specMap"), 2);
+    glBindTexture(GL_TEXTURE_2D, this->textureHandles[3]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "roughnessMap"), 3);
 }
 
-void Object::setLightingInShader()
+void Object::setPointLightingInShader()
 {
     // Set lighting uniforms
     std::vector<glm::vec3> lightPositions;
-    for (PointLight* light : this->affectingLights)
+    for (PointLight* light : this->affectingPointLights)
     {
         std::vector<float> pos = light->getPosition();
         lightPositions.push_back(glm::vec3(pos[0], pos[1], pos[2]));
     }
 
     std::vector<glm::vec3> lightColors;
-    for (PointLight* light : this->affectingLights)
+    for (PointLight* light : this->affectingPointLights)
         lightColors.push_back(glm::vec3(light->getRed(), light->getGreen(), light->getBlue()));
+
+    std::vector<float> lightAmbStrengths;
+    std::vector<float> lightSpecStrengths;
+    for (PointLight* light : this->affectingPointLights)
+    {
+        lightAmbStrengths.push_back(light->getAmbientStrength());
+    }
     
+    // TODO: Set default values for gl variables if point lights not present
     std::vector<float> camPosition = CameraController::getInstance()->getActiveCamera()->getPosition();
     glm::vec3 viewPos(camPosition[0], camPosition[1], camPosition[2]);
-    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPositions"), this->affectingLights.size(), &lightPositions[0][0]);
-    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColors"), this->affectingLights.size(), &lightColors[0][0]);
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numLights"), (int)this->affectingLights.size());
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPositions"), this->affectingPointLights.size(), &lightPositions[0][0]);
+    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColors"), this->affectingPointLights.size(), &lightColors[0][0]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numPointLights"), (int)this->affectingPointLights.size());
     glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "viewPos"), 1, glm::value_ptr(viewPos));
+    glUniform1fv(glGetUniformLocation(this->shaderProgramHandle, "plAmbientStrengths"), this->affectingPointLights.size(), &lightAmbStrengths[0]);
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "maxShine"), 512);
+}
+
+void Object::setDirectionalLightingInShader()
+{
+    // Gather information from directional lights
+    DirectionalLightingController* controller = DirectionalLightingController::getInstance();
+    const std::vector<DirectionalLight*>& dirLights = controller->getLights();
+    std::vector<glm::vec3> lightDirections;
+    std::vector<glm::vec3> lightColors;
+    std::vector<float> ambStrengths;
+    for (DirectionalLight* dirLight : dirLights)
+    {
+        lightDirections.push_back(dirLight->getDirection());
+        lightColors.push_back(dirLight->getColor());
+        ambStrengths.push_back(dirLight->getAmbientStrength());
+    }
+
+    // Set gl variables for directional lights - if no lights present, leave gl variables undefined
+    // (except for 'numDirLights') because they won't be used
+
+    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numDirLights"), dirLights.size());
+    if (dirLights.size() > 0)
+    {
+        glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "dirLightColors"), dirLights.size(), &lightColors[0][0]);
+        glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightDirs"), dirLights.size(), &lightDirections[0][0]);
+        glUniform1fv(glGetUniformLocation(this->shaderProgramHandle, "dirLightAmbientStrengths"), dirLights.size(), &ambStrengths[0]);
+    }
 }
