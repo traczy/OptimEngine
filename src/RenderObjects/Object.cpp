@@ -1,12 +1,13 @@
 #include "RenderObjects/Object.h"
-#include "shaders/VertexShader.h"
-#include "shaders/FragmentShader.h"
+#include "Shaders/Shader.h"
 #include "windowing/Mainwindow.h"
 #include "Lighting/PointLight.h"
 #include "Lighting/DirectionalLight.h"
 #include "Lighting/DirectionalLightingController.h"
 #include "Camera/CameraController.h"
 #include "Camera/Camera.h"
+#include "Material/Material.h"
+#include "Utility/HandleError.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -21,12 +22,12 @@ Object::Object()
     this->vData = nullptr;
     this->elementBufferData = nullptr;
     this->tangentData = nullptr;
+    this->material = nullptr;
 
     this->attributeHandle = 0;
     this->vDataHandle = 0;
     this->elementHandle = 0;
     this->tangentHandle = 0;
-    this->shaderProgramHandle = 0;
 
     this->dataSize = 0;
     this->elementSize = 0;
@@ -41,12 +42,12 @@ Object::Object(float* vcData, unsigned int* elementData, float* tangentData, siz
     this->dataSize = vcSize;
     this->elementSize = eSize;
     this->tangentSize = tangentSize;
+    this->material = nullptr;
 
     this->attributeHandle = 0;
     this->vDataHandle = 0;
     this->elementHandle = 0;
     this->tangentHandle = 0;
-    this->shaderProgramHandle = 0;
 }
 
 Object::~Object()
@@ -66,14 +67,6 @@ Object::~Object()
         glDeleteBuffers(1, &this->elementHandle);
     if (this->tangentHandle != 0)
         glDeleteBuffers(1, &this->tangentHandle);
-    if (this->shaderProgramHandle != 0)
-        glDeleteProgram(this->shaderProgramHandle);
-
-    for (unsigned int handle : this->textureHandles)
-    {
-        if (handle != 0)
-            glDeleteTextures(1, &handle);
-    }
 
     for (PointLight* light : this->affectingPointLights)
     {
@@ -84,83 +77,6 @@ Object::~Object()
 void Object::addAffectingLight(PointLight* light)
 {
     this->affectingPointLights.push_back(light);
-}
-
-bool Object::loadTexture(const char* path) {
-    this->textureHandles.push_back(0);
-    unsigned int* textureHandle = &this->textureHandles[this->textureHandles.size() - 1];
-    glGenTextures(1, textureHandle);
-    glBindTexture(GL_TEXTURE_2D, *textureHandle);
-
-    // Set texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // Trilinear filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // Load image using stb_image
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true); // Flip texture vertically
-    unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
-    if (data) {
-        GLenum format = (nrChannels == 3) ? GL_RGB : GL_RGBA;
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    } else {
-        std::cout << "Failed to load texture: " << path << std::endl;
-        return false;
-    }
-
-    stbi_image_free(data);
-    return true;
-}
-
-bool Object::compileShader()
-{
-    if (!vertexShader || !fragmentShader) {
-        std::cout << "Shader source is null" << std::endl;
-        return false;
-    }
-
-    // Compile vertex shader
-    unsigned int vertexShaderHandle = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShaderHandle, 1, &vertexShader, nullptr);
-    glCompileShader(vertexShaderHandle);
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShaderHandle, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertexShaderHandle, 512, nullptr, infoLog);
-        std::cout << "Vertex Shader compilation failed: " << infoLog << std::endl;
-        return false;
-    }
-
-    // Compile fragment shader
-    unsigned int fragmentShaderHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShaderHandle, 1, &fragmentShader, nullptr);
-    glCompileShader(fragmentShaderHandle);
-    glGetShaderiv(fragmentShaderHandle, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShaderHandle, 512, nullptr, infoLog);
-        std::cout << "Fragment Shader compilation failed: " << infoLog << std::endl;
-        return false;
-    }
-
-    // Link shaders into program
-    this->shaderProgramHandle = glCreateProgram();
-    glAttachShader( this->shaderProgramHandle, vertexShaderHandle);
-    glAttachShader( this->shaderProgramHandle, fragmentShaderHandle);
-    glLinkProgram( this->shaderProgramHandle);
-    glGetProgramiv( this->shaderProgramHandle, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog( this->shaderProgramHandle, 512, nullptr, infoLog);
-        std::cout << "Shader Program linking failed: " << infoLog << std::endl;
-        return false;
-    }
-    glDeleteShader(vertexShaderHandle);
-    glDeleteShader(fragmentShaderHandle);
-
-    return true;
 }
 
 bool Object::buildGeometry()
@@ -259,12 +175,9 @@ void Object::render()
         return;
     }
 
-    if (this->shaderProgramHandle != 0 && this->attributeHandle != 0 && this->vDataHandle != 0 && this->elementHandle != 0)
+    if (this->material && this->attributeHandle != 0 && this->vDataHandle != 0 && this->elementHandle != 0)
     {
-        glUseProgram(this->shaderProgramHandle);
-        if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after use program" << std::endl;
-
-        bindTexturesForRender();
+        this->material->prepareRender();
 
         setPointLightingInShader();
         setDirectionalLightingInShader();
@@ -288,32 +201,18 @@ void Object::render()
         Camera* cam = CameraController::getInstance()->getActiveCamera();
 
         // Pass matrices to shader
-        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "view"), 1, GL_FALSE, glm::value_ptr(cam->getView()));
-        glUniformMatrix4fv(glGetUniformLocation(this->shaderProgramHandle, "projection"), 1, GL_FALSE, glm::value_ptr(cam->getProjection()));
+        Shader* shader = this->material->getShader();
+        unsigned int shaderProgram = shader->getProgram();
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(cam->getView()));
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(cam->getProjection()));
 
         glBindVertexArray(this->attributeHandle);
-        if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after bind VAO" << std::endl;
 
         glDrawElements(GL_TRIANGLES, this->elementSize, GL_UNSIGNED_INT, 0);
         if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after draw" << std::endl;
 
     }
-}
-
-void Object::bindTexturesForRender()
-{
-    // Bind textures
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, this->textureHandles[0]);
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "texture1"), 0);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, this->textureHandles[1]);
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "normalMap"), 1);
-    glBindTexture(GL_TEXTURE_2D, this->textureHandles[2]);
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "specMap"), 2);
-    glBindTexture(GL_TEXTURE_2D, this->textureHandles[3]);
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "roughnessMap"), 3);
 }
 
 void Object::setPointLightingInShader()
@@ -338,14 +237,16 @@ void Object::setPointLightingInShader()
     }
     
     // TODO: Set default values for gl variables if point lights not present
+    Shader* shader = this->material->getShader();
+    unsigned int shaderProgram = shader->getProgram();
     std::vector<float> camPosition = CameraController::getInstance()->getActiveCamera()->getPosition();
     glm::vec3 viewPos(camPosition[0], camPosition[1], camPosition[2]);
-    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightPositions"), this->affectingPointLights.size(), &lightPositions[0][0]);
-    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightColors"), this->affectingPointLights.size(), &lightColors[0][0]);
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numPointLights"), (int)this->affectingPointLights.size());
-    glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "viewPos"), 1, glm::value_ptr(viewPos));
-    glUniform1fv(glGetUniformLocation(this->shaderProgramHandle, "plAmbientStrengths"), this->affectingPointLights.size(), &lightAmbStrengths[0]);
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "maxShine"), 512);
+    glUniform3fv(glGetUniformLocation(shaderProgram, "lightPositions"), this->affectingPointLights.size(), &lightPositions[0][0]);
+    glUniform3fv(glGetUniformLocation(shaderProgram, "lightColors"), this->affectingPointLights.size(), &lightColors[0][0]);
+    glUniform1i(glGetUniformLocation(shaderProgram, "numPointLights"), (int)this->affectingPointLights.size());
+    glUniform3fv(glGetUniformLocation(shaderProgram, "viewPos"), 1, glm::value_ptr(viewPos));
+    glUniform1fv(glGetUniformLocation(shaderProgram, "plAmbientStrengths"), this->affectingPointLights.size(), &lightAmbStrengths[0]);
+    glUniform1i(glGetUniformLocation(shaderProgram, "maxShine"), 512);
 }
 
 void Object::setDirectionalLightingInShader()
@@ -366,11 +267,13 @@ void Object::setDirectionalLightingInShader()
     // Set gl variables for directional lights - if no lights present, leave gl variables undefined
     // (except for 'numDirLights') because they won't be used
 
-    glUniform1i(glGetUniformLocation(this->shaderProgramHandle, "numDirLights"), dirLights.size());
+    Shader* shader = this->material->getShader();
+    unsigned int shaderProgram = shader->getProgram();
+    glUniform1i(glGetUniformLocation(shaderProgram, "numDirLights"), dirLights.size());
     if (dirLights.size() > 0)
     {
-        glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "dirLightColors"), dirLights.size(), &lightColors[0][0]);
-        glUniform3fv(glGetUniformLocation(this->shaderProgramHandle, "lightDirs"), dirLights.size(), &lightDirections[0][0]);
-        glUniform1fv(glGetUniformLocation(this->shaderProgramHandle, "dirLightAmbientStrengths"), dirLights.size(), &ambStrengths[0]);
+        glUniform3fv(glGetUniformLocation(shaderProgram, "dirLightColors"), dirLights.size(), &lightColors[0][0]);
+        glUniform3fv(glGetUniformLocation(shaderProgram, "lightDirs"), dirLights.size(), &lightDirections[0][0]);
+        glUniform1fv(glGetUniformLocation(shaderProgram, "dirLightAmbientStrengths"), dirLights.size(), &ambStrengths[0]);
     }
 }

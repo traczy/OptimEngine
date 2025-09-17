@@ -8,7 +8,7 @@ in vec2 TexCoord;
 in mat3 TBN;
 in vec3 FragPos;
 out vec4 FragColor;
-uniform sampler2D texture1;
+uniform sampler2D diffuseMap; // diffuse map
 uniform sampler2D normalMap; // Normal map
 uniform sampler2D specMap; // specular/reflectance map
 uniform sampler2D roughnessMap; // roughness map
@@ -88,7 +88,7 @@ void main() {
    }
 
    // Combine lighting with texture
-   vec3 result = (ambient + diffuse + specular) * texture(texture1, TexCoord).rgb;
+   vec3 result = (ambient + diffuse + specular) * texture(diffuseMap, TexCoord).rgb;
    FragColor = vec4(result, 1.0);
 
 }
