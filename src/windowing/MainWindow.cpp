@@ -13,6 +13,10 @@
 #include "Camera/Camera.h"
 #include "Camera/CameraController.h"
 #include "Utility/Constants.h"
+#include "Material/Material.h"
+#include "Shaders/Shader.h"
+#include "Shaders/VertexShader.h"
+#include "Shaders/FragmentShader.h"
 
 const int MainWindow::WIDTH = 800;
 const int MainWindow::HEIGHT = 600;
@@ -255,36 +259,24 @@ void MainWindow::exec()
         20, 23, 22, 22, 21, 20   // Bottom (fixed)
     };
 
+    // Create shader and material
+    Shader* shader = new Shader();
+    shader->setVertexShaderSource(vertexShader);
+    shader->setFragmentShaderSource(fragmentShader);
+    std::vector<std::string> texturePaths{
+        "C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Albedo.jpg",
+        "C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Normal.jpg",
+        "C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Specular.jpg",
+        "C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Roughness.jpg"
+    };
+    BlinnPhongMaterial* mat = new BlinnPhongMaterial(texturePaths);
+    mat->setShader(shader);
+
     Object* obj = new Object(vertices, indices, tangents, 120, 36, 144);
-    if (!obj->compileShader())
-    {
-        std::cout << "error compiling shaders" << std::endl;
-        delete obj;
-        return;
-    }
+    obj->setMaterial(mat);
     if (!obj->buildGeometry())
     {
         std::cout << "error building geometry" << std::endl;
-        delete obj;
-        return;
-    }
-    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Albedo.jpg"))
-    {
-        delete obj;
-        return;
-    }
-    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Normal.jpg"))
-    {
-        delete obj;
-        return;
-    }
-    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Specular.jpg"))
-    {
-        delete obj;
-        return;
-    }
-    if (!obj->loadTexture("C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Roughness.jpg"))
-    {
         delete obj;
         return;
     }

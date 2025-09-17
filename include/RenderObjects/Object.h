@@ -7,6 +7,7 @@
 #include "Utility/Transform.h"
 
 class PointLight;
+class BlinnPhongMaterial;
 
 class Object
 {
@@ -24,6 +25,8 @@ public:
     void setRotation(float pitch, float yaw, float roll) { this->transform.setRotation(pitch, yaw, roll); }
     void setScale(float x, float y, float z) { this->transform.setScale(x, y, z); }
 
+    void setMaterial(BlinnPhongMaterial* mat) { this->material = mat; }
+
     // TODO: Implement
     void setVertexData(float* vcData, unsigned int* elementData, size_t vcSize, size_t eSize);
 
@@ -31,12 +34,11 @@ public:
 
     void render();
 
-    bool loadTexture(const char* path);
-    bool compileShader();
     bool buildGeometry();
 
 private:
     Transform transform;
+    BlinnPhongMaterial* material; // Does not own this, MaterialController does
 
     float* vData;
     unsigned int* elementBufferData;
@@ -50,12 +52,8 @@ private:
     unsigned int elementHandle;
     unsigned int tangentHandle;
 
-    unsigned int shaderProgramHandle;
-    std::vector<unsigned int> textureHandles;
-
     std::vector<PointLight*> affectingPointLights;
 
-    void bindTexturesForRender();
     void setPointLightingInShader();
     void setDirectionalLightingInShader();
 };
