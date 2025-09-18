@@ -1,0 +1,50 @@
+cmake_minimum_required(VERSION 3.10)
+set(CMAKE_MAKE_PROGRAM "C:/mingw64/bin/mingw32-make.exe" CACHE FILEPATH "Path to build tool" FORCE)
+project(OptimumEngineProject)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_PREFIX_PATH "C:/Users/jrbri/glfw-3.4/lib-mingw-w64/;${CMAKE_PREFIX_PATH}")
+
+set(MY_SOURCES
+    src/main.cpp
+    src/Camera/Camera.cpp
+    src/Camera/CameraController.cpp
+    src/Lighting/DirectionalLight.cpp
+    src/Lighting/DirectionalLightingController.cpp
+    src/Lighting/PointLight.cpp
+    src/Material/Material.cpp
+    src/RenderObjects/Object.cpp
+    src/Shaders/Shader.cpp
+    src/Utility/HandleError.cpp
+    src/Utility/Transform.cpp
+    src/Windowing/MainWindow.cpp
+    src/Glad/glad.c
+    include/Camera/Camera.h
+    include/Camera/CameraController.h
+    include/Lighting/DirectionalLight.h
+    include/Lighting/DirectionalLightingController.h
+    include/Lighting/PointLight.h
+    include/Material/Material.h
+    include/RenderObjects/Object.h
+    include/Shaders/FragmentShader.h
+    include/Shaders/Shader.h
+    include/Shaders/VertexShader.h
+    include/Utility/Constants.h
+    include/Utility/HandleError.h
+    include/Utility/Transform.h
+    include/Windowing/MainWindow.h
+    include/Glad/glad.h
+)
+
+add_executable(OptimumEngine ${MY_SOURCES})
+
+target_include_directories(OptimumEngine PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+    $ENV{USERPROFILE}/glfw-3.4/include/
+    $ENV{USERPROFILE}/glm-master/
+    $ENV{USERPROFILE}/stb-master/
+)
+
+target_link_libraries(OptimumEngine PRIVATE "$ENV{USERPROFILE}/glfw-3.4/lib-mingw-w64/glfw3.dll")
