@@ -1,6 +1,6 @@
 #include "RenderObjects/Object.h"
 #include "Shaders/Shader.h"
-#include "windowing/Mainwindow.h"
+#include "Windowing/Mainwindow.h"
 #include "Lighting/PointLight.h"
 #include "Lighting/DirectionalLight.h"
 #include "Lighting/DirectionalLightingController.h"
@@ -9,7 +9,7 @@
 #include "Material/Material.h"
 #include "Utility/HandleError.h"
 
-#include <glad/glad.h>
+#include <Glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

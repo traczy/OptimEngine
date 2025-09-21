@@ -1,5 +1,5 @@
 #include "Camera/Camera.h"
-#include "windowing/Mainwindow.h"
+#include "Windowing/Mainwindow.h"
 #include "Utility/Constants.h"
 
 #include <glm/gtc/matrix_transform.hpp>

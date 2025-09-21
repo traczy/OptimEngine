@@ -2,7 +2,7 @@
 #include "Shaders/Shader.h"
 #include "Utility/HandleError.h"
 
-#include <glad/glad.h>
+#include <Glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
 

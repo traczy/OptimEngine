@@ -1,6 +1,6 @@
 #include "Utility/HandleError.h"
 
-#include <glad/glad.h>
+#include <Glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <iostream>

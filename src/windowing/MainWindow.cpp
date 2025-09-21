@@ -1,11 +1,11 @@
-#include <glad/glad.h>
+#include <Glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <iostream>
 #include <cmath>
 #include <chrono>
 
-#include "windowing/Mainwindow.h"
+#include "Windowing/Mainwindow.h"
 #include "RenderObjects/Object.h"
 #include "Lighting/PointLight.h"
 #include "Lighting/DirectionalLight.h"

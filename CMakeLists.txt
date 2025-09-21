@@ -18,6 +18,7 @@ set(MY_SOURCES
     src/Shaders/Shader.cpp
     src/Utility/HandleError.cpp
     src/Utility/Transform.cpp
+    src/Utility/Logger.cpp
     src/Windowing/MainWindow.cpp
     src/Glad/glad.c
     include/Camera/Camera.h
@@ -33,6 +34,7 @@ set(MY_SOURCES
     include/Utility/Constants.h
     include/Utility/HandleError.h
     include/Utility/Transform.h
+    include/Utility/Logger.h
     include/Windowing/MainWindow.h
     include/Glad/glad.h
     include/Glad/KHR/khrplatform.h
