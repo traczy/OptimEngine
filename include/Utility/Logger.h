@@ -6,9 +6,9 @@
 enum LogLevel
 {
     ERROR = 0,
-    WARNING,
-    DEBUG,
-    VERBOSE
+    WARNING = 1,
+    DEBUG = 2,
+    VERBOSE = 3
 };
 
 class Logger
@@ -18,6 +18,8 @@ public:
 
     static Logger* getInstance();
 
+    static void setLogLevel(LogLevel logLevel);
+
     void log(LogLevel type, std::string message);
 
 private:
@@ -25,7 +27,7 @@ private:
 
     Logger();
 
-    std::string logLevelToString(LogLevel type);
+    static std::string logLevelToString(LogLevel type);
 };
 
 #endif // LOGGER_H

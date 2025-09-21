@@ -10,6 +10,12 @@ Logger* Logger::getInstance()
     return instance;
 }
 
+void Logger::setLogLevel(LogLevel logLevel)
+{
+    std::cout << "Setting log level to " << logLevelToString(logLevel) << std::endl;
+    Logger::level = logLevel;
+}
+
 Logger::Logger()
 {
 
@@ -24,15 +30,23 @@ void Logger::log(LogLevel type, std::string message)
 
 std::string Logger::logLevelToString(LogLevel type)
 {
-    switch (level)
+    switch (type)
     {
         case LogLevel::ERROR:
+        {
             return "ERROR";
+        }
         case LogLevel::WARNING:
+        {
             return "WARNING";
+        }
         case LogLevel::DEBUG:
+        {
             return "DEBUG";
+        }
         default:
+        {
             return "VERBOSE";
+        }
     }
 }
