@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
-set(CMAKE_MAKE_PROGRAM "C:/mingw64/bin/mingw32-make.exe" CACHE FILEPATH "Path to build tool" FORCE)
-project(OptimumEngineProject)
+project(OptimumEngineProject LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_PREFIX_PATH "C:/Users/jrbri/glfw-3.4/lib-mingw-w64/;${CMAKE_PREFIX_PATH}")
+#set(CMAKE_PREFIX_PATH "C:/Users/jrbri/glfw-3.4/lib-mingw-w64/;${CMAKE_PREFIX_PATH}")
 
 set(MY_SOURCES
     src/main.cpp
@@ -36,15 +35,21 @@ set(MY_SOURCES
     include/Utility/Transform.h
     include/Windowing/MainWindow.h
     include/Glad/glad.h
+    include/Glad/KHR/khrplatform.h
 )
 
 add_executable(OptimumEngine ${MY_SOURCES})
 
 target_include_directories(OptimumEngine PRIVATE
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/Glad/
     $ENV{USERPROFILE}/glfw-3.4/include/
     $ENV{USERPROFILE}/glm-master/
     $ENV{USERPROFILE}/stb-master/
 )
 
-target_link_libraries(OptimumEngine PRIVATE "$ENV{USERPROFILE}/glfw-3.4/lib-mingw-w64/glfw3.dll")
+target_link_libraries(OptimumEngine PRIVATE "$ENV{USERPROFILE}/glfw-3.4/lib-vc2019/glfw3dll.lib")
+target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/OpenGL32.Lib")
+target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/kernel32.Lib")
+target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/User32.Lib")
+target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/Gdi32.Lib")
