@@ -5,7 +5,7 @@
 
 namespace HandleError
 {
-    void printErrorIf(std::string prefix);
+    bool printErrorIf(std::string prefix);
 }
 
 #endif // HANDLE_ERROR_H

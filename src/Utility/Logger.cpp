@@ -12,8 +12,8 @@ Logger* Logger::getInstance()
 
 void Logger::setLogLevel(LogLevel logLevel)
 {
-    std::cout << "Setting log level to " << logLevelToString(logLevel) << std::endl;
     Logger::level = logLevel;
+    getInstance()->log(LogLevel::DEBUG, "Setting log level to " + logLevelToString(logLevel));
 }
 
 Logger::Logger()
@@ -23,8 +23,11 @@ Logger::Logger()
 
 void Logger::log(LogLevel type, std::string message)
 {
-    if (type >= level)
-        std::cout << logLevelToString(type) << ": " << message << std::endl;
+    if (type <= level)
+    {
+        std::cout << "[" << logLevelToString(type) << "]" << ": " << message << std::endl;
+        std::flush(std::cout);
+    }
 
 }
 

@@ -1,6 +1,7 @@
 #include "Material/Material.h"
 #include "Shaders/Shader.h"
 #include "Utility/HandleError.h"
+#include "Utility/Logger.h"
 
 #include <Glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -53,25 +54,33 @@ void BlinnPhongMaterial::prepareRender()
                 glUseProgram(shaderHandle);
 
             if (this->textureHandles.size() < 4)
-                std::cout << "Do not have necessary textures loaded for this material";
+                Logger::getInstance()->log(LogLevel::ERROR, "Do not have necessary textures loaded for this material");
 
             // Bind textures in shader
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[0]);
+            HandleError::printErrorIf("After binding texture handle 0 (diffuseMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "diffuseMap"), 0);
+            HandleError::printErrorIf("After setting diffuseMap");
 
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[1]);
+            HandleError::printErrorIf("After binding texture handle 1 (normalMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "normalMap"), 1);
+            HandleError::printErrorIf("After setting normalMap");
 
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[2]);
+            HandleError::printErrorIf("After binding texture handle 2 (specMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "specMap"), 2);
+            HandleError::printErrorIf("After setting specMap");
             
             glActiveTexture(GL_TEXTURE3);
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[3]);
+            HandleError::printErrorIf("After binding texture handle3 (roughnessMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "roughnessMap"), 3);
+            HandleError::printErrorIf("After setting roughnessMap");
         }
     }
 }
@@ -81,7 +90,9 @@ bool BlinnPhongMaterial::loadTexture(const std::string& texPath)
     this->textureHandles.push_back(std::numeric_limits<unsigned int>::max());
     unsigned int* textureHandle = &this->textureHandles[this->textureHandles.size() - 1];
     glGenTextures(1, textureHandle);
+    HandleError::printErrorIf("After generate textures");
     glBindTexture(GL_TEXTURE_2D, *textureHandle);
+    HandleError::printErrorIf("After bind texture");
 
     // Set texture parameters
     // TODO: Break these out into configurable values for each material
@@ -96,10 +107,13 @@ bool BlinnPhongMaterial::loadTexture(const std::string& texPath)
     unsigned char* data = stbi_load(texPath.c_str(), &width, &height, &nrChannels, 0);
     if (data) {
         GLenum format = (nrChannels == 3) ? GL_RGB : GL_RGBA;
+
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         HandleError::printErrorIf("After tex image 2d");
+
         glGenerateMipmap(GL_TEXTURE_2D);
         HandleError::printErrorIf("After generate mipmap");
+
         stbi_image_free(data);
     } else {
         std::cout << "Failed to load texture: " << texPath << std::endl;
