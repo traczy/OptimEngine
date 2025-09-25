@@ -40,7 +40,7 @@ void BlinnPhongMaterial::prepareRender()
     {
         if (!this->shader->compile())
         {
-            std::cout << "shader compilation failed" << std::endl;
+            Logger::getInstance()->log(LogLevel::ERROR, "Shader compilation failed.");
             return;
         }
         
@@ -51,7 +51,11 @@ void BlinnPhongMaterial::prepareRender()
             GLuint currentProgram;
             glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*)&currentProgram);
             if (currentProgram != shaderHandle)
+            {
                 glUseProgram(shaderHandle);
+                Logger::getInstance()->log(LogLevel::DEBUG, "Set shader program");
+                HandleError::printErrorIf("After setting shader program.");
+            }
 
             if (this->textureHandles.size() < 4)
                 Logger::getInstance()->log(LogLevel::ERROR, "Do not have necessary textures loaded for this material");
@@ -59,24 +63,28 @@ void BlinnPhongMaterial::prepareRender()
             // Bind textures in shader
 
             glActiveTexture(GL_TEXTURE0);
+            HandleError::printErrorIf("After setting active texture 0 (diffuseMap)");
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[0]);
             HandleError::printErrorIf("After binding texture handle 0 (diffuseMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "diffuseMap"), 0);
             HandleError::printErrorIf("After setting diffuseMap");
 
             glActiveTexture(GL_TEXTURE1);
+            HandleError::printErrorIf("After setting active texture 1 (normalMap)");
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[1]);
             HandleError::printErrorIf("After binding texture handle 1 (normalMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "normalMap"), 1);
             HandleError::printErrorIf("After setting normalMap");
 
             glActiveTexture(GL_TEXTURE2);
+            HandleError::printErrorIf("After setting active texture 2 (specMap)");
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[2]);
             HandleError::printErrorIf("After binding texture handle 2 (specMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "specMap"), 2);
             HandleError::printErrorIf("After setting specMap");
             
             glActiveTexture(GL_TEXTURE3);
+            HandleError::printErrorIf("After setting active texture 3 (roughnessMap)");
             glBindTexture(GL_TEXTURE_2D, this->textureHandles[3]);
             HandleError::printErrorIf("After binding texture handle3 (roughnessMap)");
             glUniform1i(glGetUniformLocation(shaderHandle, "roughnessMap"), 3);
@@ -100,6 +108,7 @@ bool BlinnPhongMaterial::loadTexture(const std::string& texPath)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // Trilinear filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    HandleError::printErrorIf("After setting texture parameters");
 
     // Load image using stb_image
     int width, height, nrChannels;
@@ -116,8 +125,7 @@ bool BlinnPhongMaterial::loadTexture(const std::string& texPath)
 
         stbi_image_free(data);
     } else {
-        std::cout << "Failed to load texture: " << texPath << std::endl;
-        std::flush(std::cout);
+        Logger::getInstance()->log(ERROR, "Failed to load texture " + texPath);
         return false;
     }
 

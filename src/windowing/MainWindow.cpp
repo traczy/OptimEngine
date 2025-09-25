@@ -82,11 +82,15 @@ MainWindow::MainWindow()
     }
 
     glEnable(GL_DEPTH_TEST);
+    HandleError::printErrorIf("After setting depth test");
     glEnable(GL_CULL_FACE);
+    HandleError::printErrorIf("After setting CULL_FACE");
     glCullFace(GL_BACK);
+    HandleError::printErrorIf("After setting CULL_FACE to BACK");
 
     // Set viewport and callback
     glViewport(0, 0, 800, 600);
+    HandleError::printErrorIf("After setting Viewport");
     glfwSetFramebufferSizeCallback(this->window, framebufferSizeCallback);
 
     // Set mouse callback
@@ -301,6 +305,7 @@ void MainWindow::exec()
     DirectionalLight* dirLight = new DirectionalLight();
     dirLight->setColor(glm::vec3(0.5f, 1.0f, 0.5f));
     dirLight->setDirection(glm::vec3(1.0f, 0.0f, 0.0f));
+    dirLight->setAmbientStrength(0.1f);
     DirectionalLightingController::getInstance()->addLight(dirLight);
 
     // Setup camera
@@ -322,10 +327,10 @@ void MainWindow::exec()
         processInput(timeDelta);
 
         // Rendering
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        HandleError::printErrorIf("GL Error after setting clear color");
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (glGetError() != GL_NO_ERROR)
-            HandleError::printErrorIf("GL Error after clear");
+        HandleError::printErrorIf("GL Error after clear");
 
         obj->render();
         const char* renderError;
@@ -334,6 +339,10 @@ void MainWindow::exec()
 
         // Swap buffers and poll events
         glfwSwapBuffers(this->window);
+        const char* swapError;
+        if (glfwGetError(&swapError) != GLFW_NO_ERROR)
+            Logger::getInstance()->log(LogLevel::ERROR, std::string("GLFW Error: ") + swapError);
+
         if (!glfwWindowShouldClose(this->window))
             glfwPollEvents();
         else

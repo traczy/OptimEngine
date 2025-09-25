@@ -136,6 +136,8 @@ bool Object::buildGeometry()
         // Reset binds
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+        if (HandleError::printErrorIf("GL Error after resetting binds"))
+            return false;
 
         return true;
     }
@@ -239,7 +241,7 @@ void Object::setPointLightingInShader()
     glUniform1fv(glGetUniformLocation(shaderProgram, "plAmbientStrengths"), this->affectingPointLights.size(), &lightAmbStrengths[0]);
     HandleError::printErrorIf("GL Error setting plAmbientStrengths on object");
 
-    glUniform1i(glGetUniformLocation(shaderProgram, "maxShine"), 512);
+    glUniform1i(glGetUniformLocation(shaderProgram, "maxShine"), 32);
     HandleError::printErrorIf("GL Error setting maxShine on object");
 }
 

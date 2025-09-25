@@ -51,7 +51,3 @@ target_include_directories(OptimumEngine PRIVATE
 )
 
 target_link_libraries(OptimumEngine PRIVATE "$ENV{USERPROFILE}/glfw-3.4/lib-vc2019/glfw3dll.lib")
-target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/OpenGL32.Lib")
-target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/kernel32.Lib")
-target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/User32.Lib")
-target_link_libraries(OptimumEngine PRIVATE "C:/Program Files (x86)/Windows Kits/10/Lib/10.0.22621.0/um/x64/Gdi32.Lib")
