@@ -1,11 +1,11 @@
-#include <glad/glad.h>
+#include <Glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <iostream>
 #include <cmath>
 #include <chrono>
 
-#include "windowing/Mainwindow.h"
+#include "Windowing/Mainwindow.h"
 #include "RenderObjects/Object.h"
 #include "Lighting/PointLight.h"
 #include "Lighting/DirectionalLight.h"
@@ -13,6 +13,8 @@
 #include "Camera/Camera.h"
 #include "Camera/CameraController.h"
 #include "Utility/Constants.h"
+#include "Utility/Logger.h"
+#include "Utility/HandleError.h"
 #include "Material/Material.h"
 #include "Shaders/Shader.h"
 #include "Shaders/VertexShader.h"
@@ -35,7 +37,7 @@ MainWindow::MainWindow()
     // Initialize GLFW
     if (!glfwInit())
     {
-        std::cout << "Failed to initialize GLFW" << std::endl;
+        Logger::getInstance()->log(LogLevel::ERROR, "Failed to initialize GLFW");
         this->alive = false;
         return;
     }
@@ -48,8 +50,9 @@ MainWindow::MainWindow()
 
     // Create window
     this->window = glfwCreateWindow(WIDTH, HEIGHT, "Optim", nullptr, nullptr);
-    if (!this->window) {
-        std::cout << "Failed to create GLFW window" << std::endl;
+    if (!this->window)
+    {
+        Logger::getInstance()->log(LogLevel::ERROR, "Failed to create GLFW window");
         glfwTerminate();
         this->alive = false;
         return;
@@ -59,29 +62,35 @@ MainWindow::MainWindow()
     glfwMakeContextCurrent(this->window);
 
     // Initialize GLAD
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        Logger::getInstance()->log(LogLevel::ERROR, "Failed to initialize GLAD");
         glfwTerminate();
         this->alive = false;
         return;
     }
 
-    if (glDebugMessageCallback) {
+    if (glDebugMessageCallback)
+    {
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glDebugMessageCallback(debugCallback, nullptr);
     }
     else
     {
-        std::cout << "GLDebug output not supported" << std::endl;
+        Logger::getInstance()->log(LogLevel::DEBUG, "GLDebug output not supported");
     }
 
     glEnable(GL_DEPTH_TEST);
+    HandleError::printErrorIf("After setting depth test");
     glEnable(GL_CULL_FACE);
+    HandleError::printErrorIf("After setting CULL_FACE");
     glCullFace(GL_BACK);
+    HandleError::printErrorIf("After setting CULL_FACE to BACK");
 
     // Set viewport and callback
     glViewport(0, 0, 800, 600);
+    HandleError::printErrorIf("After setting Viewport");
     glfwSetFramebufferSizeCallback(this->window, framebufferSizeCallback);
 
     // Set mouse callback
@@ -138,7 +147,10 @@ void MainWindow::mouseCallback(GLFWwindow* window, double xpos, double ypos)
 void MainWindow::processInput(float timeDelta)
 {
     if (glfwGetKey(this->window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    {
+        Logger::getInstance()->log(LogLevel::DEBUG, "Closing window");
         glfwSetWindowShouldClose(this->window, true);
+    }
     else if (glfwGetKey(this->window, GLFW_KEY_W) == GLFW_PRESS)
     {
         // Use forward vector to move forward in current facing direction
@@ -259,10 +271,12 @@ void MainWindow::exec()
         20, 23, 22, 22, 21, 20   // Bottom (fixed)
     };
 
-    // Create shader and material
+    // Create shader
     Shader* shader = new Shader();
     shader->setVertexShaderSource(vertexShader);
     shader->setFragmentShaderSource(fragmentShader);
+
+    // Create material
     std::vector<std::string> texturePaths{
         "C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Albedo.jpg",
         "C:\\Users\\jrbri\\Documents\\Megascans\\Downloaded\\surface\\Brick_Modern_ui5kaiqg\\ui5kaiqg_4K_Normal.jpg",
@@ -276,11 +290,12 @@ void MainWindow::exec()
     obj->setMaterial(mat);
     if (!obj->buildGeometry())
     {
-        std::cout << "error building geometry" << std::endl;
+        Logger::getInstance()->log(LogLevel::ERROR, "error building geometry");
         delete obj;
         return;
     }
 
+    // Add point lights
     PointLight* light = new PointLight(1.2f, 1.0f, 2.0f, 0.8f, 0.8f, 0.8f);
     PointLight* lightTwo = new PointLight(-1.2f, -1.0f, 2.0f, 0.8f, 0.8f, 0.8f);
     obj->addAffectingLight(light);
@@ -290,15 +305,14 @@ void MainWindow::exec()
     DirectionalLight* dirLight = new DirectionalLight();
     dirLight->setColor(glm::vec3(0.5f, 1.0f, 0.5f));
     dirLight->setDirection(glm::vec3(1.0f, 0.0f, 0.0f));
+    dirLight->setAmbientStrength(0.1f);
     DirectionalLightingController::getInstance()->addLight(dirLight);
 
     // Setup camera
     CameraController::getInstance()->addCamera(new Camera(this, 0.f, 0.f, -3.f, 45.f));
 
     auto camPos = CameraController::getInstance()->getActiveCamera()->getPosition();
-    std::cout << "cam pos: " << camPos[0] << ", " << camPos[1] << ", " << camPos[2] << std::endl;
     auto objPos = obj->getPosition();
-    std::cout << "obj pos: " << objPos[0] << ", " << objPos[1] << ", " << objPos[2] << std::endl;
 
     auto begin = std::chrono::high_resolution_clock::now();
     size_t iters = 0;
@@ -313,27 +327,30 @@ void MainWindow::exec()
         processInput(timeDelta);
 
         // Rendering
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        HandleError::printErrorIf("GL Error after setting clear color");
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after clear" << std::endl;
+        HandleError::printErrorIf("GL Error after clear");
 
         obj->render();
         const char* renderError;
-        if (glfwGetError(&renderError) != GLFW_NO_ERROR) {
-            std::cout << "GLFW Error: " << renderError << std::endl;
-        }
+        if (glfwGetError(&renderError) != GLFW_NO_ERROR)
+            Logger::getInstance()->log(LogLevel::ERROR, std::string("GLFW Error: ") + renderError);
 
         // Swap buffers and poll events
         glfwSwapBuffers(this->window);
+        const char* swapError;
+        if (glfwGetError(&swapError) != GLFW_NO_ERROR)
+            Logger::getInstance()->log(LogLevel::ERROR, std::string("GLFW Error: ") + swapError);
+
         if (!glfwWindowShouldClose(this->window))
             glfwPollEvents();
         else
-            std::cout << "should close" << std::endl;
+            Logger::getInstance()->log(LogLevel::DEBUG, "should close");
             
         const char* glfwError;
-        if (glfwGetError(&glfwError) != GLFW_NO_ERROR) {
-            std::cout << "GLFW Error: " << glfwError << std::endl;
-        }
+        if (glfwGetError(&glfwError) != GLFW_NO_ERROR)
+            Logger::getInstance()->log(LogLevel::ERROR, std::string("GLFW Error: ") + glfwError);
 
         iters++;
     }
@@ -342,7 +359,7 @@ void MainWindow::exec()
 
     auto end = std::chrono::high_resolution_clock::now();
     double fps = (double)iters / (double)std::chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-    std::cout << fps << std::endl;
+    Logger::getInstance()->log(LogLevel::DEBUG, std::to_string(fps));
 
     // Cleanup
     glfwDestroyWindow(window);

@@ -1,6 +1,7 @@
 #include "Shaders/Shader.h"
+#include "Utility/Logger.h"
 
-#include <glad/glad.h>
+#include <Glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <limits>
@@ -24,6 +25,8 @@ bool Shader::compile()
     // Don't recompile if already compiled
     if (this->programHandle == std::numeric_limits<unsigned int>::max())
     {
+        Logger::getInstance()->log(LogLevel::DEBUG, "Compiling shader");
+
         // Create shader program, build on it throughout the function
         this->programHandle = glCreateProgram();
 
@@ -38,9 +41,10 @@ bool Shader::compile()
             int success;
             char infoLog[512];
             glGetShaderiv(vertexShaderHandle, GL_COMPILE_STATUS, &success);
-            if (!success) {
+            if (!success)
+            {
                 glGetShaderInfoLog(vertexShaderHandle, 512, nullptr, infoLog);
-                std::cout << "Vertex Shader compilation failed: " << infoLog << std::endl;
+                Logger::getInstance()->log(LogLevel::ERROR, std::string("Vertex Shader compilation failed: ") + infoLog);
                 glDeleteShader(vertexShaderHandle);
                 return false;
             }
@@ -61,9 +65,10 @@ bool Shader::compile()
             int success;
             char infoLog[512];
             glGetShaderiv(fragmentShaderHandle, GL_COMPILE_STATUS, &success);
-            if (!success) {
+            if (!success)
+            {
                 glGetShaderInfoLog(fragmentShaderHandle, 512, nullptr, infoLog);
-                std::cout << "Fragment Shader compilation failed: " << infoLog << std::endl;
+                Logger::getInstance()->log(LogLevel::ERROR, std::string("Fragment Shader compilation failed: ") + infoLog);
                 glDeleteShader(fragmentShaderHandle);
                 return false;
             }
@@ -78,9 +83,10 @@ bool Shader::compile()
         char infoLog[512];
         glLinkProgram( this->programHandle);
         glGetProgramiv( this->programHandle, GL_LINK_STATUS, &success);
-        if (!success) {
+        if (!success)
+        {
             glGetProgramInfoLog( this->programHandle, 512, nullptr, infoLog);
-            std::cout << "Shader Program linking failed: " << infoLog << std::endl;
+            Logger::getInstance()->log(LogLevel::ERROR, std::string("Shader Program linking failed: ") + infoLog);
             return false;
         }
     }

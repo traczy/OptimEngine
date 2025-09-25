@@ -1,6 +1,6 @@
 #include "RenderObjects/Object.h"
 #include "Shaders/Shader.h"
-#include "windowing/Mainwindow.h"
+#include "Windowing/Mainwindow.h"
 #include "Lighting/PointLight.h"
 #include "Lighting/DirectionalLight.h"
 #include "Lighting/DirectionalLightingController.h"
@@ -8,8 +8,9 @@
 #include "Camera/Camera.h"
 #include "Material/Material.h"
 #include "Utility/HandleError.h"
+#include "Utility/Logger.h"
 
-#include <glad/glad.h>
+#include <Glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -69,9 +70,7 @@ Object::~Object()
         glDeleteBuffers(1, &this->tangentHandle);
 
     for (PointLight* light : this->affectingPointLights)
-    {
         delete light;
-    }
 }
 
 void Object::addAffectingLight(PointLight* light)
@@ -87,80 +86,58 @@ bool Object::buildGeometry()
         glGenBuffers(1, &this->vDataHandle);
         glGenBuffers(1, &this->elementHandle);
         glGenBuffers(1, &this->tangentHandle);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after generating buffers" << std::endl;
+        if (HandleError::printErrorIf("GL Error after generating buffers"))
             return false;
-        }
 
         glBindVertexArray(this->attributeHandle);
 
         // Bind and fill interleaved vertices
         glBindBuffer(GL_ARRAY_BUFFER, this->vDataHandle);
         glBufferData(GL_ARRAY_BUFFER, this->dataSize * sizeof(float), this->vData, GL_STATIC_DRAW);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after setting VBO data" << std::endl;
+        if (HandleError::printErrorIf("GL Error after setting VBO data"))
             return false;
-        }
 
         // Position attribute
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after setting position attribute" << std::endl;
+        if (HandleError::printErrorIf("GL Error after setting position attribute"))
             return false;
-        }
 
         // TexCoord attribute
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(1);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after setting UV attribute" << std::endl;
+        if (HandleError::printErrorIf("GL Error after setting UV attribute"))
             return false;
-        }
 
         // Setup tangent buffer
         glBindBuffer(GL_ARRAY_BUFFER, this->tangentHandle);
         glBufferData(GL_ARRAY_BUFFER, this->tangentSize * sizeof(float), this->tangentData, GL_STATIC_DRAW);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after setting tangent data" << std::endl;
+        if (HandleError::printErrorIf("GL Error after setting tangent data"))
             return false;
-        }
 
         // Tangent attribute
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(2);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after setting tangent attribute" << std::endl;
+        if (HandleError::printErrorIf("GL Error after setting tangent attribute"))
             return false;
-        }
 
         // Bitangent attribute
         glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
         glEnableVertexAttribArray(3);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after setting bi-tangent attribute" << std::endl;
+        if (HandleError::printErrorIf("GL Error after setting bi-tangent attribute"))
             return false;
-        }
 
         // Bind and fill element buffer
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->elementHandle);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->elementSize * sizeof(unsigned int), this->elementBufferData, GL_STATIC_DRAW);
-        if (glGetError() != GL_NO_ERROR)
-        {
-            std::cout << "GL Error after setting EBO data" << std::endl;
+        if (HandleError::printErrorIf("GL Error after setting EBO data"))
             return false;
-        }
 
         // Reset binds
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+        if (HandleError::printErrorIf("GL Error after resetting binds"))
+            return false;
 
         return true;
     }
@@ -170,8 +147,9 @@ bool Object::buildGeometry()
 
 void Object::render()
 {
-    if (glfwGetCurrentContext() == nullptr) {
-        std::cout << "No valid OpenGL context" << std::endl;
+    if (glfwGetCurrentContext() == nullptr)
+    {
+        Logger::getInstance()->log(LogLevel::ERROR, "No valid OpenGL context");
         return;
     }
 
@@ -203,15 +181,21 @@ void Object::render()
         // Pass matrices to shader
         Shader* shader = this->material->getShader();
         unsigned int shaderProgram = shader->getProgram();
+
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        HandleError::printErrorIf("GL Error setting model matrix on object");
+
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(cam->getView()));
+        HandleError::printErrorIf("GL Error setting view matrix on object");
+
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(cam->getProjection()));
+        HandleError::printErrorIf("GL Error setting projection matrix on object");
 
         glBindVertexArray(this->attributeHandle);
+        HandleError::printErrorIf("GL Error binding vertex array on object");
 
         glDrawElements(GL_TRIANGLES, this->elementSize, GL_UNSIGNED_INT, 0);
-        if (glGetError() != GL_NO_ERROR) std::cout << "GL Error after draw" << std::endl;
-
+        HandleError::printErrorIf("GL Error after draw");
     }
 }
 
@@ -241,12 +225,24 @@ void Object::setPointLightingInShader()
     unsigned int shaderProgram = shader->getProgram();
     std::vector<float> camPosition = CameraController::getInstance()->getActiveCamera()->getPosition();
     glm::vec3 viewPos(camPosition[0], camPosition[1], camPosition[2]);
+
     glUniform3fv(glGetUniformLocation(shaderProgram, "lightPositions"), this->affectingPointLights.size(), &lightPositions[0][0]);
+    HandleError::printErrorIf("GL Error setting lightPositions on object");
+
     glUniform3fv(glGetUniformLocation(shaderProgram, "lightColors"), this->affectingPointLights.size(), &lightColors[0][0]);
+    HandleError::printErrorIf("GL Error setting lightColors on object");
+
     glUniform1i(glGetUniformLocation(shaderProgram, "numPointLights"), (int)this->affectingPointLights.size());
+    HandleError::printErrorIf("GL Error setting numPointLights on object");
+
     glUniform3fv(glGetUniformLocation(shaderProgram, "viewPos"), 1, glm::value_ptr(viewPos));
+    HandleError::printErrorIf("GL Error setting viewPos on object");
+
     glUniform1fv(glGetUniformLocation(shaderProgram, "plAmbientStrengths"), this->affectingPointLights.size(), &lightAmbStrengths[0]);
-    glUniform1i(glGetUniformLocation(shaderProgram, "maxShine"), 512);
+    HandleError::printErrorIf("GL Error setting plAmbientStrengths on object");
+
+    glUniform1i(glGetUniformLocation(shaderProgram, "maxShine"), 32);
+    HandleError::printErrorIf("GL Error setting maxShine on object");
 }
 
 void Object::setDirectionalLightingInShader()
@@ -270,10 +266,15 @@ void Object::setDirectionalLightingInShader()
     Shader* shader = this->material->getShader();
     unsigned int shaderProgram = shader->getProgram();
     glUniform1i(glGetUniformLocation(shaderProgram, "numDirLights"), dirLights.size());
+    HandleError::printErrorIf("GL Error setting numDirLights on object");
+
     if (dirLights.size() > 0)
     {
         glUniform3fv(glGetUniformLocation(shaderProgram, "dirLightColors"), dirLights.size(), &lightColors[0][0]);
+        HandleError::printErrorIf("GL Error setting dirLightColors on object");
         glUniform3fv(glGetUniformLocation(shaderProgram, "lightDirs"), dirLights.size(), &lightDirections[0][0]);
+        HandleError::printErrorIf("GL Error setting lightDirs on object");
         glUniform1fv(glGetUniformLocation(shaderProgram, "dirLightAmbientStrengths"), dirLights.size(), &ambStrengths[0]);
+        HandleError::printErrorIf("GL Error setting dirLightAmbientStrengths on object");
     }
 }

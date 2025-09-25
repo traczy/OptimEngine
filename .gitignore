@@ -6,3 +6,6 @@ build/*
 
 # VSCode files
 .vscode/*
+
+# User file
+CMakeLists.txt.user
